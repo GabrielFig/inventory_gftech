@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     environment: str = "development"
 
     database_url: str = "postgresql+asyncpg://gftech:gftech@localhost:5432/gftech_inventario"
+    db_ssl_require: bool = False
 
     secret_key: str = "change-me-in-production"
     algorithm: str = "HS256"
