@@ -168,57 +168,60 @@ Expected: `conectado OK` (sustituir con el connection string real del Step 2).
 
 ---
 
-### Task 4: Desplegar el backend en Railway
+### Task 4: Desplegar el backend en Render
 
-**Files:** ninguno (trabajo manual en la consola de Railway + variables de entorno)
+**Files:** ninguno (trabajo manual en la consola de Render + variables de entorno)
 
 **Interfaces:**
 - Consumes: connection string de Task 3, código del repo de Task 1
-- Produces: URL pública del backend (ej. `https://gftech-backend-production.up.railway.app`) — la usa Task 5 como `NEXT_PUBLIC_API_URL`.
+- Produces: URL pública del backend (ej. `https://gftech-backend.onrender.com`) — la usa Task 5 como `NEXT_PUBLIC_API_URL`.
 
-- [ ] **Step 1: Crear proyecto en Railway (manual — requiere cuenta del usuario)**
+- [ ] **Step 1: Crear el Web Service en Render (manual — requiere cuenta del usuario)**
 
-En https://railway.app: New Project → Deploy from GitHub repo → seleccionar `gftech-inventario`. En la configuración del servicio, establecer **Root Directory** = `backend` (Railway detecta el `Dockerfile` automáticamente).
+En https://dashboard.render.com: New → Web Service → conectar el repo `GabrielFig/inventory_gftech`. **Root Directory** = `backend`. Render detecta el `Dockerfile` automáticamente (Runtime: Docker). Instance Type: **Free**.
 
 - [ ] **Step 2: Configurar variables de entorno del servicio**
 
-En la pestaña Variables del servicio backend en Railway:
+En la sección Environment del Web Service en Render:
 
 ```
-DATABASE_URL=postgresql+asyncpg://gftech_inventario_owner:AbC123XyZ@ep-cool-forest-12345.us-west-2.aws.neon.tech/gftech_inventario
+DATABASE_URL=postgresql+asyncpg://neondb_owner:npg_uDEaLwPG34qi@ep-polished-term-aynyderv-pooler.c-5.us-east-2.aws.neon.tech/neondb
 DB_SSL_REQUIRE=true
-SECRET_KEY=<generar con: python -c "import secrets; print(secrets.token_urlsafe(32))">
+PORT=8000
+SECRET_KEY=JESRy7VD_MfBK0tUOQuls2s-2z9laQY9-i4pdfmYB18
 ACCESS_TOKEN_EXPIRE_MINUTES=720
 CORS_ORIGINS=["http://localhost:3000"]
 LOW_STOCK_THRESHOLD=2
 SEED_ADMIN_EMAIL=admin@gftech.mx
-SEED_ADMIN_PASSWORD=<contraseña nueva, no la de desarrollo>
+SEED_ADMIN_PASSWORD=9X9XX7Wr9ShWnz0D!
 SEED_VENDEDOR_EMAIL=ventas@gftech.mx
-SEED_VENDEDOR_PASSWORD=<contraseña nueva, no la de desarrollo>
+SEED_VENDEDOR_PASSWORD=KIzzrzXx7kbXKxAJ!
 ```
+
+`PORT=8000` es necesario porque Render, en servicios Docker, espera que el contenedor escuche en el puerto indicado por la variable `PORT` (por defecto 10000) — nuestro `entrypoint.sh` tiene el puerto 8000 fijo (`uvicorn ... --port 8000`), así que se lo decimos a Render explícitamente en vez de tocar el entrypoint.
 
 `CORS_ORIGINS` se deja con el valor local por ahora — se actualiza en Task 5 Step 4 una vez que exista la URL de Vercel.
 
-- [ ] **Step 3: Generar dominio público**
+- [ ] **Step 3: Confirmar la URL pública**
 
-En Settings → Networking del servicio → "Generate Domain". Railway asigna algo como `gftech-backend-production.up.railway.app`.
+Render asigna automáticamente un dominio del tipo `https://<nombre-del-servicio>.onrender.com` al crear el Web Service — visible arriba del dashboard del servicio, no requiere paso extra.
 
 - [ ] **Step 4: Verificar el despliegue**
 
-Run: `curl https://<dominio-railway>/health`
-Expected: `{"status":"ok"}`
+Run: `curl https://<dominio-render>/health`
+Expected: `{"status":"ok"}` (el primer request puede tardar ~30-50s si el servicio free estaba dormido).
 
-Run: `curl https://<dominio-railway>/docs` (o abrir en el navegador)
+Run: `curl https://<dominio-render>/docs` (o abrir en el navegador)
 Expected: la UI de Swagger carga correctamente.
 
 ---
 
 ### Task 5: Desplegar el frontend en Vercel
 
-**Files:** ninguno (trabajo manual en la consola de Vercel), más una actualización de variable en Railway
+**Files:** ninguno (trabajo manual en la consola de Vercel), más una actualización de variable en Render
 
 **Interfaces:**
-- Consumes: URL de Railway de Task 4 (como `NEXT_PUBLIC_API_URL`)
+- Consumes: URL de Render de Task 4 (como `NEXT_PUBLIC_API_URL`)
 - Produces: URL pública del frontend (ej. `https://gftech-inventario.vercel.app`)
 
 - [ ] **Step 1: Crear proyecto en Vercel (manual — requiere cuenta del usuario)**
@@ -230,7 +233,7 @@ En https://vercel.com: Add New → Project → importar `gftech-inventario` desd
 En Settings → Environment Variables del proyecto Vercel:
 
 ```
-NEXT_PUBLIC_API_URL=https://<dominio-railway>/api/v1
+NEXT_PUBLIC_API_URL=https://<dominio-render>/api/v1
 ```
 
 Aplicar a Production, Preview y Development.
@@ -239,15 +242,15 @@ Aplicar a Production, Preview y Development.
 
 Vercel despliega automáticamente al importar. Confirmar la URL asignada, ej. `https://gftech-inventario.vercel.app`.
 
-- [ ] **Step 4: Actualizar CORS en Railway**
+- [ ] **Step 4: Actualizar CORS en Render**
 
-Volver a Railway → Variables del backend → actualizar:
+Volver a Render → Environment del backend → actualizar:
 
 ```
 CORS_ORIGINS=["https://gftech-inventario.vercel.app"]
 ```
 
-Guardar — Railway redeploya el servicio automáticamente con la nueva variable.
+Guardar — Render redeploya el servicio automáticamente con la nueva variable.
 
 - [ ] **Step 5: Verificar**
 
@@ -282,8 +285,8 @@ Agregar una sección al final de `README.md`:
 ## Producción
 
 - Web: https://gftech-inventario.vercel.app
-- API: https://<dominio-railway>/api/v1 (docs: https://<dominio-railway>/docs)
-- DB: Neon (proyecto `gftech-inventario`, región us-west-2)
+- API: https://<dominio-render>/api/v1 (docs: https://<dominio-render>/docs)
+- DB: Neon (base `neondb`, región us-east-2, endpoint con pooler)
 ```
 
 - [ ] **Step 5: Commit**
