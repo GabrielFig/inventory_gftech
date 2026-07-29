@@ -92,7 +92,9 @@ async def list_sales(
     return list(sales), total
 
 
-async def update_sale(db: AsyncSession, sale: Sale, payload: SaleUpdate) -> Sale:
+async def update_sale(
+    db: AsyncSession, sale: Sale, payload: SaleUpdate, updated_by_id: uuid.UUID | None = None
+) -> Sale:
     product = await get_product(db, sale.product_id)
     data = payload.model_dump(exclude_unset=True)
 
@@ -107,6 +109,7 @@ async def update_sale(db: AsyncSession, sale: Sale, payload: SaleUpdate) -> Sale
         db.add(
             StockMovement(
                 product_id=product.id,
+                created_by_id=updated_by_id,
                 type=MovementType.ADJUSTMENT,
                 quantity_delta=-delta,
                 resulting_stock=product.current_stock,
@@ -122,12 +125,13 @@ async def update_sale(db: AsyncSession, sale: Sale, payload: SaleUpdate) -> Sale
     return await get_sale(db, sale.id)
 
 
-async def delete_sale(db: AsyncSession, sale: Sale) -> None:
+async def delete_sale(db: AsyncSession, sale: Sale, deleted_by_id: uuid.UUID | None = None) -> None:
     product = await get_product(db, sale.product_id)
     product.sold_count -= sale.quantity
     db.add(
         StockMovement(
             product_id=product.id,
+            created_by_id=deleted_by_id,
             type=MovementType.ADJUSTMENT,
             quantity_delta=sale.quantity,
             resulting_stock=product.current_stock,

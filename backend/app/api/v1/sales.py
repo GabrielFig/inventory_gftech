@@ -41,21 +41,21 @@ async def update_sale(
     sale_id: uuid.UUID,
     payload: SaleUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
 ) -> SaleRead:
     sale = await sale_service.get_sale(db, sale_id)
     if sale is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Venta no encontrada")
-    return await sale_service.update_sale(db, sale, payload)
+    return await sale_service.update_sale(db, sale, payload, updated_by_id=admin.id)
 
 
 @router.delete("/{sale_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_sale(
     sale_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
 ) -> None:
     sale = await sale_service.get_sale(db, sale_id)
     if sale is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Venta no encontrada")
-    await sale_service.delete_sale(db, sale)
+    await sale_service.delete_sale(db, sale, deleted_by_id=admin.id)
