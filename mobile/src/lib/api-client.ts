@@ -54,7 +54,11 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
     let detail = "Ocurrió un error inesperado";
     try {
       const data = await response.json();
-      detail = data.detail ?? detail;
+      if (Array.isArray(data.detail)) {
+        detail = data.detail.map((e: { msg?: string }) => e.msg).filter(Boolean).join(", ") || detail;
+      } else if (typeof data.detail === "string") {
+        detail = data.detail;
+      }
     } catch {
       // ignore json parse errors
     }

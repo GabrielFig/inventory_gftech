@@ -29,8 +29,11 @@ export default function VentaScreen() {
   }, [selectedProduct]);
 
   if (selectedProduct) {
-    const errorMessage =
-      registerSale.error instanceof ApiClientError ? registerSale.error.message : null;
+    const errorMessage = registerSale.error
+      ? registerSale.error instanceof ApiClientError
+        ? registerSale.error.message
+        : "No se pudo conectar con el servidor. Intenta de nuevo."
+      : null;
 
     return (
       <View style={styles.container}>
@@ -74,13 +77,14 @@ export default function VentaScreen() {
           onPress={() => {
             const parsedQuantity = Number(quantity);
             const parsedPrice = Number(unitPrice);
-            if (!parsedQuantity || parsedQuantity <= 0) return;
+            if (!Number.isInteger(parsedQuantity) || parsedQuantity <= 0) return;
+            if (!unitPrice.trim() || !(parsedPrice > 0)) return;
 
             registerSale.mutate(
               {
                 product_id: selectedProduct.id,
                 quantity: parsedQuantity,
-                unit_price: parsedPrice || undefined,
+                unit_price: parsedPrice,
                 notes: notes || undefined,
               },
               {
