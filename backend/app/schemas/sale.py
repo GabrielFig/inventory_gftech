@@ -12,6 +12,12 @@ class SaleCreate(BaseModel):
     notes: str | None = Field(default=None, max_length=255)
 
 
+class SaleUpdate(BaseModel):
+    quantity: int | None = Field(default=None, gt=0)
+    unit_price: Decimal | None = Field(default=None, gt=0, decimal_places=2)
+    notes: str | None = Field(default=None, max_length=255)
+
+
 class SaleProductSummary(BaseModel):
     id: uuid.UUID
     code: str
