@@ -45,7 +45,7 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  if (response.status === 401) {
+  if (response.status === 401 && auth) {
     await clearToken();
     throw new ApiClientError("Sesión expirada", 401);
   }
