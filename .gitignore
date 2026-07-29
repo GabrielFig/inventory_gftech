@@ -15,3 +15,6 @@ frontend/.env.local
 
 # Worktrees
 .worktrees/
+
+# Subagent-driven-development workspace (process bookkeeping, not deliverable code)
+.superpowers/
