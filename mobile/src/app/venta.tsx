@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useProductSearch } from "@/hooks/useProductSearch";
+import { useRegisterSale } from "@/hooks/useRegisterSale";
+import { ApiClientError } from "@/lib/api-client";
 import type { Product } from "@/lib/types";
 
 const STATUS_LABEL: Record<Product["status"], string> = {
@@ -17,15 +19,88 @@ export default function VentaScreen() {
   const debouncedSearch = useDebouncedValue(search, 300);
   const { data, isFetching } = useProductSearch(debouncedSearch);
 
+  const [quantity, setQuantity] = useState("1");
+  const [unitPrice, setUnitPrice] = useState("");
+  const [notes, setNotes] = useState("");
+  const registerSale = useRegisterSale();
+
+  useEffect(() => {
+    if (selectedProduct) setUnitPrice(selectedProduct.sale_price);
+  }, [selectedProduct]);
+
   if (selectedProduct) {
-    // La Task 7 reemplaza este bloque por el formulario de confirmación de venta.
+    const errorMessage =
+      registerSale.error instanceof ApiClientError ? registerSale.error.message : null;
+
     return (
       <View style={styles.container}>
-        <Pressable onPress={() => setSelectedProduct(null)}>
+        <Pressable
+          onPress={() => {
+            setSelectedProduct(null);
+            registerSale.reset();
+          }}
+        >
           <Text style={styles.back}>← Cambiar producto</Text>
         </Pressable>
         <Text style={styles.title}>{selectedProduct.name}</Text>
-        <Text>{selectedProduct.code}</Text>
+        <Text style={styles.resultCode}>
+          {selectedProduct.code} · Disponible: {selectedProduct.current_stock} pieza(s)
+        </Text>
+
+        <Text>Cantidad</Text>
+        <TextInput
+          style={styles.input}
+          keyboardType="numeric"
+          value={quantity}
+          onChangeText={setQuantity}
+        />
+
+        <Text>Precio unitario</Text>
+        <TextInput
+          style={styles.input}
+          keyboardType="decimal-pad"
+          value={unitPrice}
+          onChangeText={setUnitPrice}
+        />
+
+        <Text>Notas (opcional)</Text>
+        <TextInput style={styles.input} value={notes} onChangeText={setNotes} />
+
+        {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+
+        <Pressable
+          style={styles.button}
+          disabled={registerSale.isPending}
+          onPress={() => {
+            const parsedQuantity = Number(quantity);
+            const parsedPrice = Number(unitPrice);
+            if (!parsedQuantity || parsedQuantity <= 0) return;
+
+            registerSale.mutate(
+              {
+                product_id: selectedProduct.id,
+                quantity: parsedQuantity,
+                unit_price: parsedPrice || undefined,
+                notes: notes || undefined,
+              },
+              {
+                onSuccess: (sale) => {
+                  Alert.alert("Venta registrada", `Total: $${sale.total}`);
+                  setSelectedProduct(null);
+                  setSearch("");
+                  setQuantity("1");
+                  setNotes("");
+                },
+              },
+            );
+          }}
+        >
+          {registerSale.isPending ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Confirmar venta</Text>
+          )}
+        </Pressable>
       </View>
     );
   }
@@ -79,4 +154,7 @@ const styles = StyleSheet.create({
   resultPrice: { fontSize: 16, fontWeight: "600" },
   resultStatus: { color: "#666", fontSize: 13 },
   back: { color: "#208AEF", marginBottom: 8 },
+  button: { backgroundColor: "#208AEF", borderRadius: 8, padding: 14, alignItems: "center", marginTop: 8 },
+  buttonText: { color: "#fff", fontWeight: "600", fontSize: 16 },
+  error: { color: "#dc2626" },
 });
