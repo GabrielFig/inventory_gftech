@@ -89,6 +89,8 @@ export interface SaleCreateInput {
   notes?: string;
 }
 
+export type SaleUpdateInput = Partial<Pick<SaleCreateInput, "quantity" | "unit_price" | "notes">>;
+
 export interface DashboardSummary {
   total_pieces_in_stock: number;
   inventory_value: string;
