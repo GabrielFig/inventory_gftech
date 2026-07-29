@@ -77,6 +77,12 @@ frontend/
   src/lib/       # cliente API, tipos, formato
 ```
 
+## Producción
+
+- Web: https://inventory-gftech.vercel.app
+- API: https://inventory-gftech.onrender.com/api/v1 (docs: https://inventory-gftech.onrender.com/docs)
+- DB: Neon (base `neondb`, región us-east-2, endpoint con pooler)
+
 ## Funcionalidades (mapeadas desde las macros originales)
 
 | Macro VBA original     | Equivalente en la app                                   |
