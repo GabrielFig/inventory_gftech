@@ -45,8 +45,8 @@ export default function SalesPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-6">
           <div>
             <p className="text-xs text-muted-foreground">Ingresos (mostrados)</p>
