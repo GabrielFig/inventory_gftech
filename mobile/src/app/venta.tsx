@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { TopBar } from "@/components/TopBar";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useProductSearch } from "@/hooks/useProductSearch";
 import { useRegisterSale } from "@/hooks/useRegisterSale";
@@ -59,6 +60,7 @@ export default function VentaScreen() {
 
     return (
       <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+        <TopBar />
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <View style={styles.container}>
             <Pressable
@@ -159,8 +161,12 @@ export default function VentaScreen() {
     );
   }
 
+  const hasQuery = debouncedSearch.trim().length > 0;
+  const hasResults = (data?.items.length ?? 0) > 0;
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+      <TopBar />
       <View style={styles.container}>
         <Text style={styles.title}>Registrar venta</Text>
         <TextInput
@@ -171,28 +177,46 @@ export default function VentaScreen() {
           onChangeText={setSearch}
         />
         {isFetching ? <ActivityIndicator style={styles.spinner} /> : null}
-        <FlatList
-          data={data?.items ?? []}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => (
-            <Pressable
-              style={({ pressed }) => [styles.resultRow, pressed && styles.resultRowPressed]}
-              onPress={() => setSelectedProduct(item)}
-            >
-              <View style={styles.flex1}>
-                <Text style={styles.resultName}>{item.name}</Text>
-                <Text style={styles.resultCode}>
-                  {item.code} · {item.model_compatibility}
-                </Text>
-              </View>
-              <View style={styles.resultRight}>
-                <Text style={styles.resultPrice}>${item.sale_price}</Text>
-                <StatusPill status={item.status} />
-              </View>
-            </Pressable>
-          )}
-        />
+
+        {!hasQuery ? (
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIconCircle}>
+              <Text style={styles.emptyIcon}>🔍</Text>
+            </View>
+            <Text style={styles.emptyTitle}>Busca un producto</Text>
+            <Text style={styles.emptyText}>
+              Escribe el ID, nombre o modelo para encontrar la pieza y registrar la venta.
+            </Text>
+          </View>
+        ) : !isFetching && !hasResults ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>Sin resultados</Text>
+            <Text style={styles.emptyText}>No encontramos productos para “{debouncedSearch}”.</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={data?.items ?? []}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            renderItem={({ item }) => (
+              <Pressable
+                style={({ pressed }) => [styles.resultRow, pressed && styles.resultRowPressed]}
+                onPress={() => setSelectedProduct(item)}
+              >
+                <View style={styles.flex1}>
+                  <Text style={styles.resultName}>{item.name}</Text>
+                  <Text style={styles.resultCode}>
+                    {item.code} · {item.model_compatibility}
+                  </Text>
+                </View>
+                <View style={styles.resultRight}>
+                  <Text style={styles.resultPrice}>${item.sale_price}</Text>
+                  <StatusPill status={item.status} />
+                </View>
+              </Pressable>
+            )}
+          />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -230,6 +254,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   spinner: { marginVertical: spacing.sm },
+  emptyState: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.xs, paddingTop: spacing.xxl },
+  emptyIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.sm,
+  },
+  emptyIcon: { fontSize: 22 },
+  emptyTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
+  emptyText: { fontSize: 13, color: colors.textMuted, textAlign: "center", maxWidth: 260 },
   listContent: { gap: spacing.sm, paddingBottom: spacing.lg },
   resultRow: {
     flexDirection: "row",

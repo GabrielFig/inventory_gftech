@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -31,6 +32,11 @@ export default function LoginScreen() {
       >
         <View style={styles.container}>
           <View style={styles.header}>
+            <Image
+              source={require("../../assets/images/gftech-logo.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
             <Text style={styles.brand}>GF-Tech LM</Text>
             <Text style={styles.subtitle}>Los Mochis, Sinaloa</Text>
           </View>
@@ -91,6 +97,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: { flex: 1, justifyContent: "center", padding: spacing.xl, gap: spacing.xl },
   header: { alignItems: "center", gap: spacing.xs },
+  logo: { width: 64, height: 64, marginBottom: spacing.xs },
   brand: { fontSize: 26, fontWeight: "700", color: colors.text },
   subtitle: { fontSize: 13, color: colors.textMuted },
   card: {
