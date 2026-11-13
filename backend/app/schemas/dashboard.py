@@ -35,3 +35,26 @@ class DashboardResponse(BaseModel):
     category_breakdown: list[CategoryBreakdown]
     low_stock_products: list[ProductRead]
     recent_sales: list[SaleRead]
+
+
+class IncomePoint(BaseModel):
+    date: str
+    sales_revenue: Decimal
+    services_revenue: Decimal
+
+
+class IncomeSummary(BaseModel):
+    sales_count: int
+    sales_units: int
+    sales_revenue: Decimal
+    sales_profit: Decimal
+    services_count: int
+    services_revenue: Decimal
+    total_revenue: Decimal
+    # Los servicios no llevan costo de insumo registrado: cuentan completos como ganancia.
+    total_profit: Decimal
+
+
+class IncomeResponse(BaseModel):
+    summary: IncomeSummary
+    daily: list[IncomePoint]

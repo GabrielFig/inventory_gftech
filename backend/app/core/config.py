@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 12
+    # Sesión larga para el celular: se renueva en cada desbloqueo con huella.
+    refresh_token_expire_days: int = 90
 
     cors_origins: list[str] = ["http://localhost:3000"]
 

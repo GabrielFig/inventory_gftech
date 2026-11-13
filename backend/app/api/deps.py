@@ -24,7 +24,8 @@ async def get_current_user(
         raise credentials_error
 
     payload = decode_access_token(token)
-    if payload is None or "sub" not in payload:
+    # Un refresh token no sirve como access token (los tokens viejos sin "typ" siguen valiendo).
+    if payload is None or "sub" not in payload or payload.get("typ", "access") != "access":
         raise credentials_error
 
     user = await db.get(User, uuid.UUID(payload["sub"]))
