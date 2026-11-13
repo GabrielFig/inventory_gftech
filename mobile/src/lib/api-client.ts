@@ -1,70 +1,69 @@
-import { clearToken, getToken } from "./auth-storage";
+import { clearAccessToken, getAccessToken, getRefreshToken, saveTokens, clearSession } from "@/lib/auth-storage";
+import { ApiClientError, request, type RequestOptions } from "@/lib/http";
+import type { TokenResponse } from "@/lib/types";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8010/api/v1";
+export { ApiClientError } from "@/lib/http";
 
-export class ApiClientError extends Error {
-  status: number;
-  constructor(message: string, status: number) {
-    super(message);
-    this.status = status;
-  }
+type SignedOutListener = () => void;
+let signedOutListener: SignedOutListener | null = null;
+
+/** La sesión se registra aquí para enterarse cuando el servidor rechaza las credenciales. */
+export function onSessionExpired(listener: SignedOutListener | null): void {
+  signedOutListener = listener;
 }
 
-interface RequestOptions {
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
-  body?: unknown;
-  params?: Record<string, string | number | undefined | null>;
-  auth?: boolean;
-}
+let refreshing: Promise<string | null> | null = null;
 
-function buildUrl(path: string, params?: RequestOptions["params"]): string {
-  const url = new URL(`${API_URL}${path}`);
-  if (params) {
-    for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined && value !== null && value !== "") {
-        url.searchParams.set(key, String(value));
+/**
+ * Canjea el refresh token por un access token nuevo. Una sola petición a la vez:
+ * si varias consultas reciben 401 juntas, comparten el mismo canje.
+ * Devuelve null si no hay refresh token o el servidor lo rechazó (sesión vencida).
+ * Si no hay conexión, lanza el error para no cerrar la sesión por un mal momento de red.
+ */
+export function refreshSession(): Promise<string | null> {
+  if (!refreshing) {
+    refreshing = (async () => {
+      const refresh = await getRefreshToken();
+      if (!refresh) return null;
+      try {
+        const data = await request<TokenResponse>("/auth/refresh", {
+          method: "POST",
+          body: { refresh_token: refresh },
+        });
+        await saveTokens({ access: data.access_token, refresh: data.refresh_token });
+        return data.access_token;
+      } catch (error) {
+        if (error instanceof ApiClientError && error.status === 401) {
+          await clearSession();
+          return null;
+        }
+        throw error;
       }
-    }
+    })().finally(() => {
+      refreshing = null;
+    });
   }
-  return url.toString();
+  return refreshing;
 }
 
 export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = "GET", body, params, auth = true } = options;
+  const token = await getAccessToken();
+  try {
+    return await request<T>(path, options, token);
+  } catch (error) {
+    if (!(error instanceof ApiClientError) || error.status !== 401) throw error;
 
-  const headers: Record<string, string> = {};
-  if (body !== undefined) headers["Content-Type"] = "application/json";
-  if (auth) {
-    const token = await getToken();
-    if (token) headers["Authorization"] = `Bearer ${token}`;
+    // Token vencido: se renueva en silencio con el refresh token y se reintenta una vez.
+    const renewed = await refreshSession();
+    if (renewed) return request<T>(path, options, renewed);
+
+    await clearAccessToken();
+    signedOutListener?.();
+    throw new ApiClientError("Tu sesión expiró. Inicia sesión de nuevo.", 401);
   }
+}
 
-  const response = await fetch(buildUrl(path, params), {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
-
-  if (response.status === 401 && auth) {
-    await clearToken();
-    throw new ApiClientError("Sesión expirada", 401);
-  }
-
-  if (!response.ok) {
-    let detail = "Ocurrió un error inesperado";
-    try {
-      const data = await response.json();
-      if (Array.isArray(data.detail)) {
-        detail = data.detail.map((e: { msg?: string }) => e.msg).filter(Boolean).join(", ") || detail;
-      } else if (typeof data.detail === "string") {
-        detail = data.detail;
-      }
-    } catch {
-      // ignore json parse errors
-    }
-    throw new ApiClientError(detail, response.status);
-  }
-
-  if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
+/** Peticiones sin sesión (login). Un 401 aquí significa credenciales incorrectas, no sesión vencida. */
+export function publicFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  return request<T>(path, options, null);
 }

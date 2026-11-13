@@ -1,56 +1,67 @@
-# Welcome to your Expo app 👋
+# GF-Tech LM — App móvil (Android)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+App para llevar el negocio desde el celular: ventas, inventario, ingresos y servicios técnicos.
+Habla con la misma API (FastAPI) que la web, sin duplicar lógica.
 
-## Get started
+## Qué incluye
 
-1. Install dependencies
+| Pestaña | Qué puedes hacer |
+|---|---|
+| **Inicio** | Ingresos de hoy / 7 / 30 días / año (ventas + servicios + ganancia), gráfica de 7 días, accesos rápidos, alertas de stock y ventas recientes |
+| **Ventas** | Historial agrupado por día, con total y ganancia; registrar venta rápida; editar o eliminar (admin) |
+| **Inventario** | Buscar y filtrar (stock bajo, agotados, categoría); detalle, resurtir, alta y edición de productos (admin) |
+| **Servicios** | **Mis tarifas**: lo que cobras por cada servicio técnico. **Cobrados**: historial de servicios, que suma a tus ingresos |
+| **Más** | Ingresos, buscador por modelo (“¿qué le queda a este teléfono?”), acceso con huella, cerrar sesión |
 
-   ```bash
-   npm install
-   ```
+Los permisos siguen a la web: el **vendedor** registra ventas y cobra servicios; el **administrador**
+además da de alta/edita productos y tarifas, y ve costos y ganancias.
 
-2. Start the app
+## Acceso con huella
 
-   ```bash
-   npx expo start
-   ```
+1. La primera vez se entra con correo y contraseña. La app ofrece activar la huella.
+2. Con la huella activa, al abrir la app solo se pide la huella (o el PIN del teléfono como respaldo).
+3. La app se vuelve a bloquear si pasa más de 1 minuto en segundo plano.
+4. Se puede activar/desactivar en **Más → Entrar con huella**.
 
-In the output, you'll find options to open the app in a
+Detalle técnico: el login devuelve un `access_token` (12 h) y un `refresh_token` (90 días). Ambos se guardan
+en `expo-secure-store` (Keystore de Android). Cuando el access token vence, la app lo renueva sola con
+`POST /auth/refresh` (que además rota el refresh token). **La contraseña nunca se guarda en el teléfono.**
+Requiere backend con `/auth/refresh` (rama `feature/mobile-app`).
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Desarrollo
 
 ```bash
-npm run reset-project
+cd mobile
+npm install
+cp .env.example .env.local        # EXPO_PUBLIC_API_URL → IP de tu PC en la red local
+npx expo start                    # escanea el QR con Expo Go
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Para probar contra el backend local de Docker Compose usa `EXPO_PUBLIC_API_URL=http://<IP-de-tu-PC>:8010/api/v1`
+y agrega el origen a `CORS_ORIGINS` solo si pruebas la versión web (`npx expo start --web`);
+las apps nativas no usan CORS. Sin `.env.local` la app apunta a producción
+(`https://inventory-gftech.onrender.com/api/v1`).
 
-### Other setup steps
+> Render (plan gratis) duerme el servicio tras 15 min sin tráfico: la primera petición puede tardar ~50 s.
+> La app lo muestra como “El servidor está despertando…” y reintenta; no es un error.
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Generar el APK
 
-## Learn more
+```bash
+npx eas-cli login                                    # una sola vez
+npx eas-cli build --platform android --profile preview
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+El perfil `preview` (en `eas.json`) genera un **APK** instalable que apunta a la API de producción.
+Descárgalo del enlace que entrega EAS e instálalo en el teléfono (permite “instalar apps de origen desconocido”).
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Estructura
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```
+src/
+  app/            rutas (expo-router): login, unlock, (tabs)/*, venta/*, producto/*, servicio/*, ingresos, modelo
+  components/ui/  sistema de diseño: Button, Card, TextField, Chips, Fab, estados vacíos/error/carga…
+  theme/          tokens (colores claro/oscuro, espaciado, tipografía Space Grotesk)
+  lib/            cliente API con renovación de sesión, sesión/huella, formato, periodos
+  hooks/api.ts    consultas y mutaciones (TanStack Query)
+```

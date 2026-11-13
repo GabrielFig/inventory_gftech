@@ -1,0 +1,215 @@
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { apiFetch } from "@/lib/api-client";
+import { periodRange, type PeriodKey } from "@/lib/period";
+import type {
+  Category,
+  DashboardResponse,
+  IncomeResponse,
+  ModelSearchResult,
+  Product,
+  ProductInput,
+  ProductListResponse,
+  SaleCreate,
+  SaleListResponse,
+  SaleRead,
+  SaleUpdate,
+  Service,
+  ServiceInput,
+  ServiceRecord,
+  ServiceRecordCreate,
+  ServiceRecordListResponse,
+  Supplier,
+} from "@/lib/types";
+
+// ───────────────────────── Consultas ─────────────────────────
+
+export interface ProductFilters {
+  search?: string;
+  status?: "ok" | "bajo" | "agotado";
+  category_id?: string;
+}
+
+export function useProducts(filters: ProductFilters = {}) {
+  return useQuery({
+    queryKey: ["products", "list", filters],
+    queryFn: () => apiFetch<ProductListResponse>("/products", { params: { ...filters, limit: 200 } }),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useProduct(id: string | undefined) {
+  return useQuery({
+    queryKey: ["products", "detail", id],
+    queryFn: () => apiFetch<Product>(`/products/${id}`),
+    enabled: !!id,
+  });
+}
+
+export function useSales(period: PeriodKey | "all") {
+  return useQuery({
+    queryKey: ["sales", period],
+    queryFn: () =>
+      apiFetch<SaleListResponse>("/sales", {
+        params: { limit: 200, date_from: period === "all" ? undefined : periodRange(period).date_from },
+      }),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useDashboard() {
+  return useQuery({ queryKey: ["dashboard"], queryFn: () => apiFetch<DashboardResponse>("/dashboard") });
+}
+
+export function useIncome(period: PeriodKey) {
+  return useQuery({
+    queryKey: ["income", period],
+    queryFn: () => {
+      const { date_from, tz_offset_minutes } = periodRange(period);
+      return apiFetch<IncomeResponse>("/dashboard/income", { params: { date_from, tz_offset_minutes } });
+    },
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useServices() {
+  return useQuery({ queryKey: ["services"], queryFn: () => apiFetch<Service[]>("/services") });
+}
+
+export function useServiceRecords(period: PeriodKey | "all") {
+  return useQuery({
+    queryKey: ["service-records", period],
+    queryFn: () =>
+      apiFetch<ServiceRecordListResponse>("/service-records", {
+        params: { limit: 200, date_from: period === "all" ? undefined : periodRange(period).date_from },
+      }),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useSuppliers() {
+  return useQuery({ queryKey: ["suppliers"], queryFn: () => apiFetch<Supplier[]>("/suppliers"), staleTime: 600_000 });
+}
+
+export function useCategories() {
+  return useQuery({ queryKey: ["categories"], queryFn: () => apiFetch<Category[]>("/categories"), staleTime: 600_000 });
+}
+
+export function useModelSearch(query: string) {
+  const q = query.trim();
+  return useQuery({
+    queryKey: ["compatibility", q],
+    queryFn: () => apiFetch<ModelSearchResult[]>("/compatibility/search", { params: { q } }),
+    enabled: q.length >= 2,
+    placeholderData: keepPreviousData,
+  });
+}
+
+// ───────────────────────── Mutaciones ─────────────────────────
+
+/** Todo lo que cambia stock o dinero invalida junto: inventario, ventas, ingresos y resumen. */
+function useInvalidate() {
+  const queryClient = useQueryClient();
+  return (...keys: string[]) => {
+    for (const key of keys) queryClient.invalidateQueries({ queryKey: [key] });
+  };
+}
+
+export function useRegisterSale() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (payload: SaleCreate) => apiFetch<SaleRead>("/sales", { method: "POST", body: payload }),
+    onSuccess: () => invalidate("sales", "products", "dashboard", "income", "compatibility"),
+  });
+}
+
+export function useUpdateSale(id: string) {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (payload: SaleUpdate) => apiFetch<SaleRead>(`/sales/${id}`, { method: "PATCH", body: payload }),
+    onSuccess: () => invalidate("sales", "products", "dashboard", "income"),
+  });
+}
+
+export function useDeleteSale() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (id: string) => apiFetch<void>(`/sales/${id}`, { method: "DELETE" }),
+    onSuccess: () => invalidate("sales", "products", "dashboard", "income"),
+  });
+}
+
+export function useCreateProduct() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (payload: ProductInput) => apiFetch<Product>("/products", { method: "POST", body: payload }),
+    onSuccess: () => invalidate("products", "dashboard"),
+  });
+}
+
+export function useUpdateProduct(id: string) {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (payload: Partial<Omit<ProductInput, "initial_stock">>) =>
+      apiFetch<Product>(`/products/${id}`, { method: "PATCH", body: payload }),
+    onSuccess: () => invalidate("products", "dashboard", "compatibility"),
+  });
+}
+
+export function useRestockProduct() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: ({ id, quantity, note }: { id: string; quantity: number; note?: string }) =>
+      apiFetch<Product>(`/products/${id}/restock`, { method: "POST", body: { quantity, note } }),
+    onSuccess: () => invalidate("products", "dashboard", "compatibility"),
+  });
+}
+
+export function useDeleteProduct() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (id: string) => apiFetch<void>(`/products/${id}`, { method: "DELETE" }),
+    onSuccess: () => invalidate("products", "dashboard", "compatibility"),
+  });
+}
+
+export function useCreateService() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (payload: ServiceInput) => apiFetch<Service>("/services", { method: "POST", body: payload }),
+    onSuccess: () => invalidate("services"),
+  });
+}
+
+export function useUpdateService(id: string) {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (payload: Partial<ServiceInput>) => apiFetch<Service>(`/services/${id}`, { method: "PATCH", body: payload }),
+    onSuccess: () => invalidate("services"),
+  });
+}
+
+export function useDeleteService() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (id: string) => apiFetch<void>(`/services/${id}`, { method: "DELETE" }),
+    onSuccess: () => invalidate("services"),
+  });
+}
+
+export function useRegisterServiceRecord() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (payload: ServiceRecordCreate) =>
+      apiFetch<ServiceRecord>("/service-records", { method: "POST", body: payload }),
+    onSuccess: () => invalidate("service-records", "income"),
+  });
+}
+
+export function useDeleteServiceRecord() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (id: string) => apiFetch<void>(`/service-records/${id}`, { method: "DELETE" }),
+    onSuccess: () => invalidate("service-records", "income"),
+  });
+}
