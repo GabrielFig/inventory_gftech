@@ -131,3 +131,62 @@ export interface ModelSearchResult {
 export interface ApiError {
   detail: string;
 }
+
+export interface Service {
+  id: string;
+  name: string;
+  description: string | null;
+  price: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface ServiceCreateInput {
+  name: string;
+  description?: string | null;
+  price: number;
+}
+
+export type ServiceUpdateInput = Partial<ServiceCreateInput> & { is_active?: boolean };
+
+export interface ServiceRecord {
+  id: string;
+  service_id: string | null;
+  service_name: string;
+  price: string;
+  notes: string | null;
+  performed_at: string;
+}
+
+export interface ServiceRecordListResponse {
+  items: ServiceRecord[];
+  total: number;
+}
+
+export interface ServiceRecordCreateInput {
+  service_id: string;
+  price?: number;
+  notes?: string;
+}
+
+export interface IncomeSummary {
+  sales_count: number;
+  sales_units: number;
+  sales_revenue: string;
+  sales_profit: string;
+  services_count: number;
+  services_revenue: string;
+  total_revenue: string;
+  total_profit: string;
+}
+
+export interface IncomePoint {
+  date: string;
+  sales_revenue: string;
+  services_revenue: string;
+}
+
+export interface IncomeResponse {
+  summary: IncomeSummary;
+  daily: IncomePoint[];
+}

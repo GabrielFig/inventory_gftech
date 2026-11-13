@@ -3,13 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, ShoppingCart, Search, AlertTriangle } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, Search, AlertTriangle, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const NAV_ITEMS = [
   { href: "/", label: "Resumen", icon: LayoutDashboard },
   { href: "/productos", label: "Productos", icon: Package },
   { href: "/ventas", label: "Ventas", icon: ShoppingCart },
+  { href: "/servicios", label: "Servicios", icon: Wrench },
   { href: "/buscador", label: "Buscador por modelo", icon: Search },
   { href: "/alertas", label: "Alertas de stock", icon: AlertTriangle },
 ];

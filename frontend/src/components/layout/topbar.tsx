@@ -26,6 +26,7 @@ const TITLES: Record<string, string> = {
   "/": "Resumen",
   "/productos": "Productos",
   "/ventas": "Ventas",
+  "/servicios": "Servicios",
   "/buscador": "Buscador por modelo",
   "/alertas": "Alertas de stock",
 };
