@@ -11,10 +11,12 @@ import { AppText } from "@/components/ui/text";
 import { useModelSearch } from "@/hooks/api";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { spacing, useTheme } from "@/theme";
+import { useBottomInset } from "@/lib/layout";
 
 const ORDER = ["Funda", "Mica", "Mica Cámara", "Cable", "Cargador"];
 
 export default function ModelSearchScreen() {
+  const bottomInset = useBottomInset();
   const router = useRouter();
   const theme = useTheme();
   const [query, setQuery] = useState("");
@@ -34,7 +36,7 @@ export default function ModelSearchScreen() {
           returnKeyType="search"
         />
       </View>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.lg, paddingTop: 0, gap: spacing.lg, paddingBottom: spacing.xxl }}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.lg, paddingTop: 0, gap: spacing.lg, paddingBottom: spacing.xxl + bottomInset }}>
         {debounced.length < 2 ? (
           <EmptyState icon="phone-android" title="¿Qué le queda a este modelo?" message="Escribe el teléfono del cliente y te mostramos la funda, mica y accesorios que tienes para él, con su stock." />
         ) : isFetching && !data ? (

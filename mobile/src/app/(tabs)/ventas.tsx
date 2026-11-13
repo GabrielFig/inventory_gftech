@@ -2,12 +2,14 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { RefreshControl, SectionList, View } from "react-native";
 
+import { Reveal } from "@/components/motion/reveal";
 import { RowSeparator, SaleRow } from "@/components/rows";
 import { Segmented } from "@/components/ui/chips";
 import { Fab } from "@/components/ui/fab";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/ui/states";
 import { AppText } from "@/components/ui/text";
 import { useSales } from "@/hooks/api";
+import { useListBottomPadding } from "@/lib/layout";
 import { dayKey, formatDayHeading, formatMoney, parseDate } from "@/lib/format";
 import type { PeriodKey } from "@/lib/period";
 import { useSession } from "@/lib/session";
@@ -45,6 +47,7 @@ export default function SalesScreen() {
   const router = useRouter();
   const theme = useTheme();
   const { isAdmin } = useSession();
+  const bottomPadding = useListBottomPadding(true);
   const [period, setPeriod] = useState<SalesPeriod>("today");
   const { data, isPending, isError, error, refetch, isRefetching } = useSales(period);
 
@@ -59,7 +62,11 @@ export default function SalesScreen() {
         keyExtractor={(sale) => sale.id}
         stickySectionHeadersEnabled
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={[theme.primary]} progressBackgroundColor={theme.surface} />}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: bottomPadding }}
+        initialNumToRender={12}
+        windowSize={7}
+        maxToRenderPerBatch={10}
+        removeClippedSubviews
         ListHeaderComponent={
           <View style={{ padding: spacing.lg, gap: spacing.lg }}>
             <Segmented options={OPTIONS} value={period} onChange={setPeriod} />
@@ -113,8 +120,10 @@ export default function SalesScreen() {
             </AppText>
           </View>
         )}
-        renderItem={({ item }) => (
-          <SaleRow sale={item} showProfit={isAdmin} onPress={() => router.push({ pathname: "/venta/[id]", params: { id: item.id } })} />
+        renderItem={({ item, index }) => (
+          <Reveal index={index}>
+            <SaleRow sale={item} showProfit={isAdmin} onPress={() => router.push({ pathname: "/venta/[id]", params: { id: item.id } })} />
+          </Reveal>
         )}
         ItemSeparatorComponent={RowSeparator}
         ListEmptyComponent={

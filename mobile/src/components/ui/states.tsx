@@ -1,5 +1,13 @@
-import { useEffect, useState } from "react";
-import { Animated, View } from "react-native";
+import { useEffect } from "react";
+import { View } from "react-native";
+import Animated, {
+  Easing,
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 
 import { Button } from "@/components/ui/button";
 import { Icon, type IconName } from "@/components/ui/icon";
@@ -9,24 +17,21 @@ import { radius, spacing, useTheme } from "@/theme";
 
 export function Skeleton({ height = 16, width, radiusSize = radius.sm }: { height?: number; width?: number | `${number}%`; radiusSize?: number }) {
   const theme = useTheme();
-  const [opacity] = useState(() => new Animated.Value(0.5));
+  const opacity = useSharedValue(0.5);
 
+  // El pulso corre en el hilo de UI: no cuesta renders de React mientras carga.
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.5, duration: 700, useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
+    opacity.set(withRepeat(withTiming(1, { duration: 750, easing: Easing.inOut(Easing.quad) }), -1, true));
+    return () => cancelAnimation(opacity);
   }, [opacity]);
+
+  const pulse = useAnimatedStyle(() => ({ opacity: opacity.get() }));
 
   return (
     <Animated.View
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      style={{ height, width: width ?? "100%", borderRadius: radiusSize, backgroundColor: theme.surfaceMuted, opacity }}
+      style={[{ height, width: width ?? "100%", borderRadius: radiusSize, backgroundColor: theme.surfaceMuted }, pulse]}
     />
   );
 }

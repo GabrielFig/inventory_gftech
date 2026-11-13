@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { FlatList, Pressable, RefreshControl, TextInput, View } from "react-native";
 
+import { Reveal } from "@/components/motion/reveal";
 import { ProductRow, RowSeparator } from "@/components/rows";
 import { Chip, ChipRow } from "@/components/ui/chips";
 import { Fab } from "@/components/ui/fab";
@@ -10,6 +11,7 @@ import { EmptyState, ErrorState, ListSkeleton } from "@/components/ui/states";
 import { AppText } from "@/components/ui/text";
 import { useCategories, useProducts, type ProductFilters } from "@/hooks/api";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { useListBottomPadding } from "@/lib/layout";
 import { useSession } from "@/lib/session";
 import { formatNumber } from "@/lib/format";
 import { hit, noOutline, radius, spacing, useTheme } from "@/theme";
@@ -20,6 +22,7 @@ export default function InventoryScreen() {
   const router = useRouter();
   const theme = useTheme();
   const { isAdmin } = useSession();
+  const bottomPadding = useListBottomPadding(isAdmin);
   const params = useLocalSearchParams<{ status?: string }>();
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState<string | undefined>();
@@ -43,7 +46,11 @@ export default function InventoryScreen() {
         keyExtractor={(p) => p.id}
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={[theme.primary]} progressBackgroundColor={theme.surface} />}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: bottomPadding }}
+        initialNumToRender={14}
+        windowSize={7}
+        maxToRenderPerBatch={12}
+        removeClippedSubviews
         ItemSeparatorComponent={RowSeparator}
         ListHeaderComponent={
           <View style={{ gap: spacing.md, paddingVertical: spacing.lg }}>
@@ -99,8 +106,10 @@ export default function InventoryScreen() {
             </View>
           </View>
         }
-        renderItem={({ item }) => (
-          <ProductRow product={item} onPress={() => router.push({ pathname: "/producto/[id]", params: { id: item.id } })} />
+        renderItem={({ item, index }) => (
+          <Reveal index={index}>
+            <ProductRow product={item} onPress={() => router.push({ pathname: "/producto/[id]", params: { id: item.id } })} />
+          </Reveal>
         )}
         ListEmptyComponent={
           isPending ? (

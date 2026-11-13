@@ -11,6 +11,7 @@ import {
   saveTokens,
   setBiometricEnabled,
 } from "@/lib/auth-storage";
+import { prefetchTabs } from "@/hooks/api";
 import { ApiClientError } from "@/lib/http";
 import { queryClient } from "@/lib/query-client";
 import type { CurrentUser, TokenResponse } from "@/lib/types";
@@ -115,6 +116,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, [bootAttempt]);
+
+  // Con sesión iniciada se precargan las pestañas, para que abran con datos.
+  useEffect(() => {
+    if (status === "signedIn") prefetchTabs(queryClient);
+  }, [status]);
 
   // Bloqueo al volver de segundo plano.
   useEffect(() => {

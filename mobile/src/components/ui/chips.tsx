@@ -1,5 +1,8 @@
+import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 
+import { PressableScale } from "@/components/motion/pressable-scale";
 import { AppText } from "@/components/ui/text";
 import { radius, spacing, useTheme } from "@/theme";
 
@@ -16,11 +19,12 @@ export function Chip({
 }) {
   const theme = useTheme();
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={({ pressed }) => ({
+      scaleTo={0.94}
+      style={{
         minHeight: 40,
         paddingHorizontal: spacing.lg,
         borderRadius: radius.full,
@@ -30,8 +34,7 @@ export function Chip({
         flexDirection: "row",
         alignItems: "center",
         gap: spacing.xs,
-        opacity: pressed ? 0.8 : 1,
-      })}
+      }}
     >
       <AppText variant="bodyStrong" tone={selected ? "onPrimary" : "default"}>
         {label}
@@ -41,7 +44,7 @@ export function Chip({
           {count}
         </AppText>
       ) : null}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -59,7 +62,7 @@ export function ChipRow({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Selector segmentado de 2–4 opciones que ocupa todo el ancho. */
+/** Selector segmentado de 2–4 opciones que ocupa todo el ancho, con indicador deslizante. */
 export function Segmented<T extends string>({
   options,
   value,
@@ -70,17 +73,56 @@ export function Segmented<T extends string>({
   onChange: (key: T) => void;
 }) {
   const theme = useTheme();
+  const [width, setWidth] = useState(0);
+  const index = Math.max(
+    0,
+    options.findIndex((option) => option.key === value),
+  );
+  const segmentWidth = width > 0 ? (width - PADDING * 2) / options.length : 0;
+  const x = useSharedValue(0);
+  const placed = useRef(false);
+
+  useEffect(() => {
+    if (segmentWidth === 0) return;
+    const target = index * segmentWidth;
+    // La primera vez se coloca sin animar; los cambios siguientes se deslizan.
+    x.set(placed.current ? withSpring(target, { damping: 20, stiffness: 260, mass: 0.7 }) : target);
+    placed.current = true;
+  }, [index, segmentWidth, x]);
+
+  const indicator = useAnimatedStyle(() => ({ transform: [{ translateX: x.get() }] }));
+
   return (
     <View
       accessibilityRole="tablist"
+      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
       style={{
         flexDirection: "row",
         backgroundColor: theme.surfaceMuted,
         borderRadius: radius.md,
         borderCurve: "continuous",
-        padding: 3,
+        padding: PADDING,
       }}
     >
+      {segmentWidth > 0 ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            {
+              position: "absolute",
+              top: PADDING,
+              left: PADDING,
+              bottom: PADDING,
+              width: segmentWidth,
+              borderRadius: radius.sm + 1,
+              borderCurve: "continuous",
+              backgroundColor: theme.surface,
+              boxShadow: "0 1px 2px rgba(10, 30, 38, 0.12)",
+            },
+            indicator,
+          ]}
+        />
+      ) : null}
       {options.map((option) => {
         const selected = option.key === value;
         return (
@@ -89,16 +131,7 @@ export function Segmented<T extends string>({
             accessibilityRole="tab"
             accessibilityState={{ selected }}
             onPress={() => onChange(option.key)}
-            style={{
-              flex: 1,
-              minHeight: 40,
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: radius.sm + 1,
-              borderCurve: "continuous",
-              backgroundColor: selected ? theme.surface : "transparent",
-              boxShadow: selected ? "0 1px 2px rgba(10, 30, 38, 0.12)" : undefined,
-            }}
+            style={{ flex: 1, minHeight: 40, alignItems: "center", justifyContent: "center" }}
           >
             <AppText variant="bodyStrong" tone={selected ? "default" : "muted"}>
               {option.label}
@@ -109,3 +142,5 @@ export function Segmented<T extends string>({
     </View>
   );
 }
+
+const PADDING = 3;

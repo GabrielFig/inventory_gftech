@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { View } from "react-native";
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withTiming } from "react-native-reanimated";
 
 import { AppText } from "@/components/ui/text";
 import { formatCompact, weekdayInitial } from "@/lib/format";
@@ -25,7 +27,7 @@ export function IncomeChart({ days, daily }: { days: string[]; daily: IncomePoin
   return (
     <View style={{ gap: spacing.sm }}>
       <View style={{ height: CHART_HEIGHT, flexDirection: "row", alignItems: "flex-end", gap: dense ? 1 : 6 }}>
-        {bars.map((bar) => {
+        {bars.map((bar, i) => {
           const total = bar.sales + bar.services;
           const height = total === 0 ? 3 : Math.max(6, (total / max) * (CHART_HEIGHT - 18));
           return (
@@ -35,19 +37,14 @@ export function IncomeChart({ days, daily }: { days: string[]; daily: IncomePoin
                   {formatCompact(total)}
                 </AppText>
               ) : null}
-              <View
-                accessibilityLabel={`${bar.key}: $${total}`}
-                style={{
-                  width: "100%",
-                  height,
-                  borderRadius: dense ? 2 : radius.sm - 2,
-                  overflow: "hidden",
-                  backgroundColor: total === 0 ? theme.surfaceMuted : theme.warning,
-                  justifyContent: "flex-end",
-                }}
-              >
-                {total > 0 ? <View style={{ height: `${(bar.sales / total) * 100}%`, backgroundColor: theme.primary }} /> : null}
-              </View>
+              <Bar
+                label={bar.key + ": $" + total}
+                height={height}
+                delay={i * 40}
+                rounded={dense ? 2 : radius.sm - 2}
+                empty={total === 0}
+                salesShare={total > 0 ? bar.sales / total : 0}
+              />
             </View>
           );
         })}
@@ -79,5 +76,50 @@ function Legend({ color, label }: { color: string; label: string }) {
         {label}
       </AppText>
     </View>
+  );
+}
+
+/** Barra que crece desde la base al aparecer (y al cambiar de valor), en el hilo de UI. */
+function Bar({
+  label,
+  height,
+  delay,
+  rounded,
+  empty,
+  salesShare,
+}: {
+  label: string;
+  height: number;
+  delay: number;
+  rounded: number;
+  empty: boolean;
+  salesShare: number;
+}) {
+  const theme = useTheme();
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    progress.set(0);
+    progress.set(withDelay(delay, withTiming(1, { duration: 520, easing: Easing.out(Easing.cubic) })));
+  }, [height, delay, progress]);
+
+  const style = useAnimatedStyle(() => ({ height: 3 + (height - 3) * progress.get() }));
+
+  return (
+    <Animated.View
+      accessibilityLabel={label}
+      style={[
+        {
+          width: "100%",
+          borderRadius: rounded,
+          overflow: "hidden",
+          backgroundColor: empty ? theme.surfaceMuted : theme.warning,
+          justifyContent: "flex-end",
+        },
+        style,
+      ]}
+    >
+      {!empty ? <View style={{ height: `${salesShare * 100}%`, backgroundColor: theme.primary }} /> : null}
+    </Animated.View>
   );
 }

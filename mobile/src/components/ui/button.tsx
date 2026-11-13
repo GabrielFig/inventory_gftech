@@ -1,4 +1,6 @@
-import { ActivityIndicator, Pressable, View, type StyleProp, type ViewStyle } from "react-native";
+import { ActivityIndicator, View, type StyleProp, type ViewStyle } from "react-native";
+
+import { PressableScale } from "@/components/motion/pressable-scale";
 
 import { Icon, type IconName } from "@/components/ui/icon";
 import { AppText } from "@/components/ui/text";
@@ -33,14 +35,14 @@ export function Button({
   const inactive = disabled || loading;
 
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={title}
       accessibilityState={{ disabled: !!inactive, busy: !!loading }}
       disabled={inactive}
       onPress={onPress}
       android_ripple={{ color: theme.overlay, borderless: false }}
-      style={({ pressed }) => [
+      style={[
         {
           minHeight: hit,
           borderRadius: radius.md,
@@ -52,7 +54,7 @@ export function Button({
           alignItems: "center",
           justifyContent: "center",
           overflow: "hidden",
-          opacity: inactive ? 0.5 : pressed ? 0.85 : 1,
+          opacity: inactive ? 0.5 : 1,
         },
         style,
       ]}
@@ -63,7 +65,7 @@ export function Button({
           {title}
         </AppText>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -79,21 +81,15 @@ export function IconButton({
   color?: string;
 }) {
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={label}
       hitSlop={6}
       onPress={onPress}
-      style={({ pressed }) => ({
-        width: hit,
-        height: hit,
-        alignItems: "center",
-        justifyContent: "center",
-        borderRadius: radius.full,
-        opacity: pressed ? 0.6 : 1,
-      })}
+      scaleTo={0.88}
+      style={{ width: hit, height: hit, alignItems: "center", justifyContent: "center", borderRadius: radius.full }}
     >
       <Icon name={icon} size={24} color={color} />
-    </Pressable>
+    </PressableScale>
   );
 }

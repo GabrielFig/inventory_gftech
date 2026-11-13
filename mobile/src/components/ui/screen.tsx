@@ -1,6 +1,5 @@
 import { KeyboardAvoidingView, RefreshControl, ScrollView, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
+import { useBottomInset } from "@/lib/layout";
 import { spacing, useTheme } from "@/theme";
 
 /** Pantalla desplazable con jalar-para-actualizar, márgenes y área segura inferior. */
@@ -21,13 +20,13 @@ export function Screen({
   padded?: boolean;
 }) {
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
+  const bottomInset = useBottomInset();
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.background }}
       contentContainerStyle={{
         padding: padded ? spacing.lg : 0,
-        paddingBottom: (padded ? spacing.lg : 0) + insets.bottom + bottomSpace,
+        paddingBottom: (padded ? spacing.lg : 0) + bottomInset + bottomSpace,
         gap,
       }}
       keyboardShouldPersistTaps="handled"
@@ -45,12 +44,12 @@ export function Screen({
 /** Formulario: sube con el teclado y deja el botón principal siempre alcanzable. */
 export function FormScreen({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
+  const bottomInset = useBottomInset();
   return (
     <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: theme.background }}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xl + insets.bottom, gap: spacing.lg }}
+        contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xl + bottomInset, gap: spacing.lg }}
       >
         {children}
       </ScrollView>

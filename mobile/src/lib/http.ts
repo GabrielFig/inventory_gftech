@@ -1,5 +1,14 @@
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "https://inventory-gftech.onrender.com/api/v1";
 
+/**
+ * Despierta el servidor (Render duerme el plan gratis): se llama al abrir la app, así
+ * cuando el usuario termina de poner la huella o la contraseña ya está listo.
+ */
+export function warmUpServer(): void {
+  const root = API_URL.replace(/\/api\/v1\/?$/, "");
+  fetch(root + "/health").catch(() => {});
+}
+
 // Render (plan gratis) duerme el servicio y la primera petición puede tardar ~50 s.
 const TIMEOUT_MS = 70_000;
 

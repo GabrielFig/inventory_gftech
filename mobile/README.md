@@ -28,6 +28,18 @@ en `expo-secure-store` (Keystore de Android). Cuando el access token vence, la a
 `POST /auth/refresh` (que además rota el refresh token). **La contraseña nunca se guarda en el teléfono.**
 Requiere backend con `/auth/refresh` (rama `feature/mobile-app`).
 
+## Rendimiento y animaciones
+
+- **Arranque rápido:** al abrir la app se despierta el servidor (Render) en segundo plano y, al iniciar sesión,
+  se precargan Ventas, Inventario y Servicios para que abran con datos y no con esqueletos.
+- **Caché y foco:** los datos se conservan 30 min y se refrescan solos al volver a la app.
+- **Listas:** ventana de renderizado acotada y pestañas inactivas congeladas (`freezeOnBlur`).
+- **Animaciones (Reanimated, hilo de UI):** botones que se hunden al tocar, entrada escalonada de secciones y filas,
+  cifra de ingresos que "cuenta", barras de la gráfica que crecen, selector con indicador deslizante,
+  esqueletos con pulso e ícono activo de las pestañas con rebote.
+- **Barra del sistema:** la barra de pestañas, los botones flotantes y los formularios suman el área segura
+  inferior, así que se acomodan tanto a la navegación por botones como a la de gestos.
+
 ## Desarrollo
 
 ```bash

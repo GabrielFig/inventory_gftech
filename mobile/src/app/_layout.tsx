@@ -12,11 +12,13 @@ import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { warmUpServer } from "@/lib/http";
 import { queryClient } from "@/lib/query-client";
 import { SessionProvider, useSession } from "@/lib/session";
 import { fonts, useTheme } from "@/theme";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+warmUpServer();
 
 function RootStack() {
   const { status } = useSession();

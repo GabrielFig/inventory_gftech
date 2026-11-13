@@ -3,6 +3,9 @@ import { useState } from "react";
 import { Pressable, View } from "react-native";
 
 import { IncomeChart } from "@/components/income-chart";
+import { AnimatedMoney } from "@/components/motion/animated-money";
+import { PressableScale } from "@/components/motion/pressable-scale";
+import { Reveal } from "@/components/motion/reveal";
 import { RowSeparator, SaleRow } from "@/components/rows";
 import { ActionTile, StatTile } from "@/components/tiles";
 import { Card, SectionHeader } from "@/components/ui/card";
@@ -38,15 +41,16 @@ export default function HomeScreen() {
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh} bottomSpace={spacing.lg}>
-      <View style={{ gap: 2 }}>
+      <Reveal index={0} style={{ gap: 2 }}>
         <AppText variant="title">
           {greeting()}, {firstName}
         </AppText>
         <AppText tone="muted">{formatLongDate(new Date())}</AppText>
-      </View>
+      </Reveal>
 
       {/* Ingresos: el dato que más se consulta, arriba y grande */}
-      <View
+      <Reveal
+        index={1}
         style={{
           backgroundColor: theme.hero,
           borderRadius: radius.xl,
@@ -64,11 +68,12 @@ export default function HomeScreen() {
           {PERIODS.map((p) => {
             const selected = p.key === period;
             return (
-              <Pressable
+              <PressableScale
                 key={p.key}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
                 onPress={() => setPeriod(p.key)}
+                scaleTo={0.94}
                 style={{
                   minHeight: 36,
                   paddingHorizontal: spacing.md,
@@ -82,7 +87,7 @@ export default function HomeScreen() {
                 <AppText variant="captionStrong" style={{ color: selected ? theme.hero : theme.heroMuted }}>
                   {p.label}
                 </AppText>
-              </Pressable>
+              </PressableScale>
             );
           })}
         </View>
@@ -104,9 +109,12 @@ export default function HomeScreen() {
             <AppText variant="label" tone="heroMuted">
               Ingresos · {PERIODS.find((p) => p.key === period)?.long}
             </AppText>
-            <AppText variant="hero" tone="hero" accessibilityLabel={`Ingresos ${formatMoney(income.data.summary.total_revenue)}`}>
-              {formatMoney(income.data.summary.total_revenue)}
-            </AppText>
+            <AnimatedMoney
+              variant="hero"
+              tone="hero"
+              value={Number(income.data.summary.total_revenue)}
+              accessibilityLabel={"Ingresos " + formatMoney(income.data.summary.total_revenue)}
+            />
             <View style={{ flexDirection: "row", gap: spacing.lg, flexWrap: "wrap", marginTop: spacing.xs }}>
               <HeroFigure label="Ventas" value={formatMoney(income.data.summary.sales_revenue)} />
               <HeroFigure label="Servicios" value={formatMoney(income.data.summary.services_revenue)} />
@@ -115,9 +123,9 @@ export default function HomeScreen() {
           </View>
         )}
         </Pressable>
-      </View>
+      </Reveal>
 
-      <View style={{ gap: spacing.md }}>
+      <Reveal index={2} style={{ gap: spacing.md }}>
         <View style={{ flexDirection: "row", gap: spacing.md }}>
           <ActionTile icon="point-of-sale" label="Vender" emphasis onPress={() => router.push("/venta/nueva")} />
           <ActionTile icon="build" label="Cobrar servicio" onPress={() => router.push("/servicio/cobrar")} />
@@ -128,8 +136,9 @@ export default function HomeScreen() {
           ) : null}
           <ActionTile icon="phone-android" label="Buscar por modelo" onPress={() => router.push("/modelo")} />
         </View>
-      </View>
+      </Reveal>
 
+      <Reveal index={3}>
       <Card>
         <View style={{ gap: spacing.md }}>
           <SectionHeader title="Últimos 7 días" />
@@ -142,8 +151,9 @@ export default function HomeScreen() {
           )}
         </View>
       </Card>
+      </Reveal>
 
-      <View style={{ gap: spacing.md }}>
+      <Reveal index={4} style={{ gap: spacing.md }}>
         <SectionHeader title="Inventario" />
         {dashboard.isPending ? (
           <Skeleton height={96} radiusSize={radius.lg} />
@@ -183,9 +193,9 @@ export default function HomeScreen() {
             ) : null}
           </>
         )}
-      </View>
+      </Reveal>
 
-      <View style={{ gap: spacing.md }}>
+      <Reveal index={5} style={{ gap: spacing.md }}>
         <SectionHeader
           title="Ventas recientes"
           action={
@@ -214,7 +224,7 @@ export default function HomeScreen() {
             ))}
           </Card>
         )}
-      </View>
+      </Reveal>
     </Screen>
   );
 }

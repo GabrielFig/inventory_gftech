@@ -1,4 +1,6 @@
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
+
+import { PressableScale } from "@/components/motion/pressable-scale";
 
 import { Icon, type IconName } from "@/components/ui/icon";
 import { AppText } from "@/components/ui/text";
@@ -18,11 +20,11 @@ export function ActionTile({
 }) {
   const theme = useTheme();
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      style={({ pressed }) => ({
+      style={{
         flex: 1,
         minHeight: hit + 40,
         padding: spacing.md,
@@ -34,8 +36,7 @@ export function ActionTile({
         borderWidth: emphasis ? 0 : 1,
         borderColor: theme.border,
         boxShadow: shadows.card,
-        opacity: pressed ? 0.85 : 1,
-      })}
+      }}
     >
       <View
         style={{
@@ -52,7 +53,7 @@ export function ActionTile({
       <AppText variant="bodyStrong" tone={emphasis ? "onPrimary" : "default"}>
         {label}
       </AppText>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -71,12 +72,13 @@ export function StatTile({
 }) {
   const theme = useTheme();
   return (
-    <Pressable
+    <PressableScale
       disabled={!onPress}
       accessibilityRole={onPress ? "button" : undefined}
       accessibilityLabel={`${label}: ${value}`}
       onPress={onPress}
-      style={({ pressed }) => ({
+      scaleTo={onPress ? 0.97 : 1}
+      style={{
         flex: 1,
         padding: spacing.lg,
         gap: 2,
@@ -86,8 +88,7 @@ export function StatTile({
         borderColor: theme.border,
         backgroundColor: theme.surface,
         boxShadow: shadows.card,
-        opacity: pressed ? 0.85 : 1,
-      })}
+      }}
     >
       <AppText variant="caption" tone="muted">
         {label}
@@ -100,7 +101,7 @@ export function StatTile({
           {hint}
         </AppText>
       ) : null}
-    </Pressable>
+    </PressableScale>
   );
 }
 

@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { RefreshControl, SectionList, View, FlatList } from "react-native";
 
+import { Reveal } from "@/components/motion/reveal";
 import { RowSeparator, ServiceRecordRow, ServiceRow } from "@/components/rows";
 import { Button } from "@/components/ui/button";
 import { Segmented } from "@/components/ui/chips";
@@ -11,6 +12,7 @@ import { AppText } from "@/components/ui/text";
 import { useServiceRecords, useServices } from "@/hooks/api";
 import { dayKey, formatDayHeading, formatMoney, parseDate } from "@/lib/format";
 import type { PeriodKey } from "@/lib/period";
+import { useListBottomPadding } from "@/lib/layout";
 import { useSession } from "@/lib/session";
 import type { ServiceRecord } from "@/lib/types";
 import { spacing, useTheme } from "@/theme";
@@ -40,6 +42,7 @@ export default function ServicesScreen() {
   const router = useRouter();
   const theme = useTheme();
   const { isAdmin } = useSession();
+  const bottomPadding = useListBottomPadding(true);
   const [view, setView] = useState<View_>("tarifas");
   const [period, setPeriod] = useState<RecordPeriod>("week");
   const services = useServices();
@@ -65,7 +68,10 @@ export default function ServicesScreen() {
           data={services.data ?? []}
           keyExtractor={(s) => s.id}
           refreshControl={<RefreshControl refreshing={services.isRefetching} onRefresh={services.refetch} colors={[theme.primary]} progressBackgroundColor={theme.surface} />}
-          contentContainerStyle={{ paddingBottom: 120 }}
+          contentContainerStyle={{ paddingBottom: bottomPadding }}
+          initialNumToRender={12}
+          windowSize={7}
+          removeClippedSubviews
           ItemSeparatorComponent={RowSeparator}
           ListHeaderComponent={
             <View>
@@ -79,7 +85,8 @@ export default function ServicesScreen() {
               ) : null}
             </View>
           }
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
+            <Reveal index={index}>
             <ServiceRow
               service={item}
               onPress={
@@ -99,6 +106,7 @@ export default function ServicesScreen() {
                 ) : undefined
               }
             />
+            </Reveal>
           )}
           ListEmptyComponent={
             services.isPending ? (
@@ -136,7 +144,10 @@ export default function ServicesScreen() {
         keyExtractor={(r) => r.id}
         stickySectionHeadersEnabled
         refreshControl={<RefreshControl refreshing={records.isRefetching} onRefresh={records.refetch} colors={[theme.primary]} progressBackgroundColor={theme.surface} />}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: bottomPadding }}
+          initialNumToRender={12}
+          windowSize={7}
+          removeClippedSubviews
         ItemSeparatorComponent={RowSeparator}
         ListHeaderComponent={
           <View>
@@ -176,7 +187,11 @@ export default function ServicesScreen() {
             </AppText>
           </View>
         )}
-        renderItem={({ item }) => <ServiceRecordRow record={item} />}
+        renderItem={({ item, index }) => (
+          <Reveal index={index}>
+            <ServiceRecordRow record={item} />
+          </Reveal>
+        )}
         ListEmptyComponent={
           records.isPending ? (
             <ListSkeleton rows={5} />

@@ -1,4 +1,11 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api-client";
 import { periodRange, type PeriodKey } from "@/lib/period";
@@ -30,12 +37,54 @@ export interface ProductFilters {
   category_id?: string;
 }
 
-export function useProducts(filters: ProductFilters = {}) {
-  return useQuery({
+export const productsQuery = (filters: ProductFilters = {}) =>
+  queryOptions({
     queryKey: ["products", "list", filters],
     queryFn: () => apiFetch<ProductListResponse>("/products", { params: { ...filters, limit: 200 } }),
     placeholderData: keepPreviousData,
   });
+
+export const salesQuery = (period: PeriodKey | "all") =>
+  queryOptions({
+    queryKey: ["sales", period],
+    queryFn: () =>
+      apiFetch<SaleListResponse>("/sales", {
+        params: { limit: 200, date_from: period === "all" ? undefined : periodRange(period).date_from },
+      }),
+    placeholderData: keepPreviousData,
+  });
+
+export const dashboardQuery = () =>
+  queryOptions({ queryKey: ["dashboard"], queryFn: () => apiFetch<DashboardResponse>("/dashboard") });
+
+export const incomeQuery = (period: PeriodKey) =>
+  queryOptions({
+    queryKey: ["income", period],
+    queryFn: () => {
+      const { date_from, tz_offset_minutes } = periodRange(period);
+      return apiFetch<IncomeResponse>("/dashboard/income", { params: { date_from, tz_offset_minutes } });
+    },
+    placeholderData: keepPreviousData,
+  });
+
+export const servicesQuery = () =>
+  queryOptions({ queryKey: ["services"], queryFn: () => apiFetch<Service[]>("/services") });
+
+export const serviceRecordsQuery = (period: PeriodKey | "all") =>
+  queryOptions({
+    queryKey: ["service-records", period],
+    queryFn: () =>
+      apiFetch<ServiceRecordListResponse>("/service-records", {
+        params: { limit: 200, date_from: period === "all" ? undefined : periodRange(period).date_from },
+      }),
+    placeholderData: keepPreviousData,
+  });
+
+export const categoriesQuery = () =>
+  queryOptions({ queryKey: ["categories"], queryFn: () => apiFetch<Category[]>("/categories"), staleTime: 600_000 });
+
+export function useProducts(filters: ProductFilters = {}) {
+  return useQuery(productsQuery(filters));
 }
 
 export function useProduct(id: string | undefined) {
@@ -47,44 +96,38 @@ export function useProduct(id: string | undefined) {
 }
 
 export function useSales(period: PeriodKey | "all") {
-  return useQuery({
-    queryKey: ["sales", period],
-    queryFn: () =>
-      apiFetch<SaleListResponse>("/sales", {
-        params: { limit: 200, date_from: period === "all" ? undefined : periodRange(period).date_from },
-      }),
-    placeholderData: keepPreviousData,
-  });
+  return useQuery(salesQuery(period));
 }
 
 export function useDashboard() {
-  return useQuery({ queryKey: ["dashboard"], queryFn: () => apiFetch<DashboardResponse>("/dashboard") });
+  return useQuery(dashboardQuery());
 }
 
 export function useIncome(period: PeriodKey) {
-  return useQuery({
-    queryKey: ["income", period],
-    queryFn: () => {
-      const { date_from, tz_offset_minutes } = periodRange(period);
-      return apiFetch<IncomeResponse>("/dashboard/income", { params: { date_from, tz_offset_minutes } });
-    },
-    placeholderData: keepPreviousData,
-  });
+  return useQuery(incomeQuery(period));
 }
 
 export function useServices() {
-  return useQuery({ queryKey: ["services"], queryFn: () => apiFetch<Service[]>("/services") });
+  return useQuery(servicesQuery());
 }
 
 export function useServiceRecords(period: PeriodKey | "all") {
-  return useQuery({
-    queryKey: ["service-records", period],
-    queryFn: () =>
-      apiFetch<ServiceRecordListResponse>("/service-records", {
-        params: { limit: 200, date_from: period === "all" ? undefined : periodRange(period).date_from },
-      }),
-    placeholderData: keepPreviousData,
-  });
+  return useQuery(serviceRecordsQuery(period));
+}
+
+/**
+ * Precarga lo que las pestañas van a pedir apenas se abran (Inicio ya lo pide solo),
+ * para que Ventas, Inventario y Servicios aparezcan con datos y no con esqueletos.
+ */
+export function prefetchTabs(client: QueryClient) {
+  const jobs = [
+    client.prefetchQuery(productsQuery({})),
+    client.prefetchQuery(categoriesQuery()),
+    client.prefetchQuery(salesQuery("today")),
+    client.prefetchQuery(servicesQuery()),
+    client.prefetchQuery(serviceRecordsQuery("week")),
+  ];
+  return Promise.allSettled(jobs);
 }
 
 export function useSuppliers() {
@@ -92,7 +135,7 @@ export function useSuppliers() {
 }
 
 export function useCategories() {
-  return useQuery({ queryKey: ["categories"], queryFn: () => apiFetch<Category[]>("/categories"), staleTime: 600_000 });
+  return useQuery(categoriesQuery());
 }
 
 export function useModelSearch(query: string) {

@@ -7,27 +7,41 @@ import { formatMoney, formatTime, parseDate } from "@/lib/format";
 import type { Product, SaleRead, Service, ServiceRecord } from "@/lib/types";
 import { hit, spacing, useTheme } from "@/theme";
 
-function RowShell({ children, onPress, label }: { children: React.ReactNode; onPress?: () => void; label?: string }) {
+function RowShell({
+  children,
+  onPress,
+  label,
+  trailing,
+}: {
+  children: React.ReactNode;
+  onPress?: () => void;
+  label?: string;
+  /** Acción propia de la fila (ej. "Editar"): va fuera del área tocable para no anidar botones. */
+  trailing?: React.ReactNode;
+}) {
   const theme = useTheme();
   return (
-    <Pressable
-      accessibilityRole={onPress ? "button" : undefined}
-      accessibilityLabel={label}
-      disabled={!onPress}
-      onPress={onPress}
-      android_ripple={{ color: theme.primarySoft }}
-      style={{
-        minHeight: hit + 12,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: spacing.md,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        backgroundColor: theme.surface,
-      }}
-    >
-      {children}
-    </Pressable>
+    <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: theme.surface }}>
+      <Pressable
+        accessibilityRole={onPress ? "button" : undefined}
+        accessibilityLabel={label}
+        disabled={!onPress}
+        onPress={onPress}
+        android_ripple={{ color: theme.primarySoft }}
+        style={{
+          flex: 1,
+          minHeight: hit + 12,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: spacing.md,
+          paddingHorizontal: spacing.lg,
+          paddingVertical: spacing.md,
+        }}
+      >
+        {children}
+      </Pressable>
+      {trailing ? <View style={{ paddingRight: spacing.sm }}>{trailing}</View> : null}
+    </View>
   );
 }
 
@@ -92,7 +106,7 @@ export function ServiceRow({
   trailing?: React.ReactNode;
 }) {
   return (
-    <RowShell onPress={onPress} label={`${service.name}, ${formatMoney(service.price)}`}>
+    <RowShell onPress={onPress} label={`${service.name}, ${formatMoney(service.price)}`} trailing={trailing}>
       <View style={{ flex: 1, gap: 2, opacity: service.is_active ? 1 : 0.55 }}>
         <AppText variant="bodyStrong" numberOfLines={1}>
           {service.name}
@@ -111,7 +125,6 @@ export function ServiceRow({
       <AppText variant="number" style={{ opacity: service.is_active ? 1 : 0.55 }}>
         {formatMoney(service.price)}
       </AppText>
-      {trailing}
     </RowShell>
   );
 }
