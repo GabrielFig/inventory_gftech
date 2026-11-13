@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.models.product import Product
 from app.models.sale import Sale
 from app.models.stock_movement import MovementType, StockMovement
-from app.schemas.sale import SaleCreate
+from app.schemas.sale import SaleCreate, SaleUpdate
 from app.services.product_service import get_product
 
 SALE_LOADS = (selectinload(Sale.product),)
@@ -90,3 +90,53 @@ async def list_sales(
     query = query.order_by(Sale.sale_date.desc()).limit(limit).offset(offset)
     sales = (await db.execute(query)).scalars().all()
     return list(sales), total
+
+
+async def update_sale(
+    db: AsyncSession, sale: Sale, payload: SaleUpdate, updated_by_id: uuid.UUID | None = None
+) -> Sale:
+    product = await get_product(db, sale.product_id)
+    data = payload.model_dump(exclude_unset=True)
+
+    if "quantity" in data and data["quantity"] != sale.quantity:
+        delta = data["quantity"] - sale.quantity
+        if delta > 0 and delta > product.current_stock:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Stock insuficiente. Disponible: {product.current_stock} pieza(s)",
+            )
+        product.sold_count += delta
+        db.add(
+            StockMovement(
+                product_id=product.id,
+                created_by_id=updated_by_id,
+                type=MovementType.ADJUSTMENT,
+                quantity_delta=-delta,
+                resulting_stock=product.current_stock,
+                note="Edición de venta",
+            )
+        )
+
+    for field, value in data.items():
+        setattr(sale, field, value)
+
+    await db.flush()
+    await db.commit()
+    return await get_sale(db, sale.id)
+
+
+async def delete_sale(db: AsyncSession, sale: Sale, deleted_by_id: uuid.UUID | None = None) -> None:
+    product = await get_product(db, sale.product_id)
+    product.sold_count -= sale.quantity
+    db.add(
+        StockMovement(
+            product_id=product.id,
+            created_by_id=deleted_by_id,
+            type=MovementType.ADJUSTMENT,
+            quantity_delta=sale.quantity,
+            resulting_stock=product.current_stock,
+            note="Venta eliminada",
+        )
+    )
+    await db.delete(sale)
+    await db.commit()

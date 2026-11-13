@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api-client";
-import type { Sale, SaleCreateInput, SaleListResponse } from "@/lib/types";
+import type { Sale, SaleCreateInput, SaleListResponse, SaleUpdateInput } from "@/lib/types";
 
 export interface SaleFilters {
   product_id?: string;
@@ -23,6 +23,30 @@ export function useRegisterSale() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: SaleCreateInput) => apiFetch<Sale>("/sales", { method: "POST", body: payload }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sales"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
+export function useUpdateSale(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: SaleUpdateInput) => apiFetch<Sale>(`/sales/${id}`, { method: "PATCH", body: payload }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sales"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
+export function useDeleteSale() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiFetch<void>(`/sales/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sales"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });

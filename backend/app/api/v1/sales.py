@@ -1,13 +1,13 @@
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_admin
 from app.core.database import get_db
 from app.models.user import User
-from app.schemas.sale import SaleCreate, SaleListResponse, SaleRead
+from app.schemas.sale import SaleCreate, SaleListResponse, SaleRead, SaleUpdate
 from app.services import sale_service
 
 router = APIRouter(prefix="/sales", tags=["sales"])
@@ -34,3 +34,28 @@ async def register_sale(
     payload: SaleCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)
 ) -> SaleRead:
     return await sale_service.register_sale(db, payload, sold_by_id=user.id)
+
+
+@router.patch("/{sale_id}", response_model=SaleRead)
+async def update_sale(
+    sale_id: uuid.UUID,
+    payload: SaleUpdate,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+) -> SaleRead:
+    sale = await sale_service.get_sale(db, sale_id)
+    if sale is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Venta no encontrada")
+    return await sale_service.update_sale(db, sale, payload, updated_by_id=admin.id)
+
+
+@router.delete("/{sale_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_sale(
+    sale_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+) -> None:
+    sale = await sale_service.get_sale(db, sale_id)
+    if sale is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Venta no encontrada")
+    await sale_service.delete_sale(db, sale, deleted_by_id=admin.id)
