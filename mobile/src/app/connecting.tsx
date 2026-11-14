@@ -5,9 +5,10 @@ import { BrandMark, BrandScreen, BrandTitle } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { AppText } from "@/components/ui/text";
 import { useSession } from "@/lib/session";
-import { spacing } from "@/theme";
+import { spacing, useTheme } from "@/theme";
 
 export default function ConnectingScreen() {
+  const theme = useTheme();
   const { status, retryConnection } = useSession();
   const [slow, setSlow] = useState(false);
 
@@ -32,7 +33,7 @@ export default function ConnectingScreen() {
           </View>
         ) : (
           <View style={{ alignItems: "center", gap: spacing.md }}>
-            <ActivityIndicator color="#2BF5D1" />
+            <ActivityIndicator color={theme.heroAccent} />
             <AppText tone="heroMuted" style={{ textAlign: "center" }}>
               {slow
                 ? "El servidor está despertando, puede tardar hasta un minuto…"

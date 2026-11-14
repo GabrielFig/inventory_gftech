@@ -1,11 +1,12 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { RefreshControl, SectionList, View } from "react-native";
 
 import { Reveal } from "@/components/motion/reveal";
 import { RowSeparator, SaleRow } from "@/components/rows";
 import { Segmented } from "@/components/ui/chips";
 import { Fab } from "@/components/ui/fab";
+import { SearchField } from "@/components/ui/search-field";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/ui/states";
 import { AppText } from "@/components/ui/text";
 import { useSales } from "@/hooks/api";
@@ -49,9 +50,18 @@ export default function SalesScreen() {
   const { isAdmin } = useSession();
   const bottomPadding = useListBottomPadding(true);
   const [period, setPeriod] = useState<SalesPeriod>("today");
+  const [search, setSearch] = useState("");
   const { data, isPending, isError, error, refetch, isRefetching } = useSales(period);
 
-  const sections = data ? groupByDay(data.items) : [];
+  const term = search.trim().toLowerCase();
+  const visible = useMemo(() => {
+    const items = data?.items ?? [];
+    if (!term) return items;
+    return items.filter((s) =>
+      [s.product.name, s.product.model_compatibility, s.notes ?? ""].some((text) => text.toLowerCase().includes(term)),
+    );
+  }, [data, term]);
+  const sections = useMemo(() => groupByDay(visible), [visible]);
   const total = data?.items.reduce((sum, s) => sum + Number(s.total), 0) ?? 0;
   const profit = data?.items.reduce((sum, s) => sum + Number(s.profit), 0) ?? 0;
 
@@ -61,6 +71,7 @@ export default function SalesScreen() {
         sections={sections}
         keyExtractor={(sale) => sale.id}
         stickySectionHeadersEnabled
+        keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={[theme.primary]} progressBackgroundColor={theme.surface} />}
         contentContainerStyle={{ paddingBottom: bottomPadding }}
         initialNumToRender={12}
@@ -70,6 +81,12 @@ export default function SalesScreen() {
         ListHeaderComponent={
           <View style={{ padding: spacing.lg, gap: spacing.lg }}>
             <Segmented options={OPTIONS} value={period} onChange={setPeriod} />
+            <SearchField
+              accessibilityLabel="Buscar en las ventas"
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Producto, modelo o nota"
+            />
             {data ? (
               <View style={{ flexDirection: "row", gap: spacing.xl }}>
                 <View>
@@ -134,8 +151,12 @@ export default function SalesScreen() {
           ) : (
             <EmptyState
               icon="receipt-long"
-              title="Sin ventas en este periodo"
-              message="Cuando registres una venta aparecerá aquí con su ganancia."
+              title={term ? "Sin resultados" : "Sin ventas en este periodo"}
+              message={
+                term
+                  ? `Ninguna venta de este periodo coincide con “${search.trim()}”.`
+                  : "Cuando registres una venta aparecerá aquí con su ganancia."
+              }
             />
           )
         }

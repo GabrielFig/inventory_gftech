@@ -1,12 +1,12 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { FlatList, Pressable, RefreshControl, TextInput, View } from "react-native";
+import { FlatList, RefreshControl, View } from "react-native";
 
 import { Reveal } from "@/components/motion/reveal";
 import { ProductRow, RowSeparator } from "@/components/rows";
 import { Chip, ChipRow } from "@/components/ui/chips";
 import { Fab } from "@/components/ui/fab";
-import { Icon } from "@/components/ui/icon";
+import { SearchField } from "@/components/ui/search-field";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/ui/states";
 import { AppText } from "@/components/ui/text";
 import { useCategories, useProducts, type ProductFilters } from "@/hooks/api";
@@ -14,7 +14,7 @@ import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useListBottomPadding } from "@/lib/layout";
 import { useSession } from "@/lib/session";
 import { formatNumber } from "@/lib/format";
-import { hit, noOutline, radius, spacing, useTheme } from "@/theme";
+import { spacing, useTheme } from "@/theme";
 
 type StatusFilter = "all" | "bajo" | "agotado";
 
@@ -55,36 +55,12 @@ export default function InventoryScreen() {
         ListHeaderComponent={
           <View style={{ gap: spacing.md, paddingVertical: spacing.lg }}>
             <View style={{ paddingHorizontal: spacing.lg }}>
-              <View
-                style={{
-                  minHeight: hit,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: spacing.sm,
-                  paddingHorizontal: spacing.md,
-                  borderRadius: radius.md,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  backgroundColor: theme.surface,
-                }}
-              >
-                <Icon name="search" size={22} color="textMuted" />
-                <TextInput
-                  accessibilityLabel="Buscar producto"
-                  value={search}
-                  onChangeText={setSearch}
-                  placeholder="Nombre, modelo o ID (INV-001)"
-                  placeholderTextColor={theme.textMuted}
-                  autoCorrect={false}
-                  returnKeyType="search"
-                  style={{ flex: 1, minHeight: hit, fontSize: 16, color: theme.text, paddingVertical: 0, ...noOutline }}
-                />
-                {search ? (
-                  <Pressable accessibilityRole="button" accessibilityLabel="Borrar búsqueda" hitSlop={10} onPress={() => setSearch("")}>
-                    <Icon name="close" size={20} color="textMuted" />
-                  </Pressable>
-                ) : null}
-              </View>
+              <SearchField
+                accessibilityLabel="Buscar producto"
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Nombre, modelo o ID (INV-001)"
+              />
             </View>
 
             <ChipRow>

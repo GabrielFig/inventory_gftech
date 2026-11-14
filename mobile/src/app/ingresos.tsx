@@ -46,7 +46,7 @@ export default function IncomeScreen() {
             </AppText>
             {isAdmin ? (
               <AppText tone="hero">
-                Ganancia <AppText variant="bodyStrong" style={{ color: "#2BF5D1" }}>{formatMoney(data.summary.total_profit)}</AppText>
+                Ganancia <AppText variant="bodyStrong" style={{ color: theme.heroAccent }}>{formatMoney(data.summary.total_profit)}</AppText>
               </AppText>
             ) : null}
           </View>

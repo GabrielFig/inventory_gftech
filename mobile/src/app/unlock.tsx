@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { AppText } from "@/components/ui/text";
 import { useSession, type UnlockResult } from "@/lib/session";
-import { radius, spacing } from "@/theme";
+import { radius, spacing, useTheme } from "@/theme";
 
 const MESSAGES: Partial<Record<UnlockResult, string>> = {
   cancelled: "Toca el sensor para desbloquear.",
@@ -14,6 +14,7 @@ const MESSAGES: Partial<Record<UnlockResult, string>> = {
 };
 
 export default function UnlockScreen() {
+  const theme = useTheme();
   const { unlock, switchToPassword } = useSession();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -53,12 +54,12 @@ export default function UnlockScreen() {
             borderRadius: radius.full,
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: pressed ? "#143B49" : "#0E2B34",
+            backgroundColor: pressed ? theme.heroSurface : theme.hero,
             borderWidth: 2,
-            borderColor: "#2BF5D1",
+            borderColor: theme.heroAccent,
           })}
         >
-          <Icon name="fingerprint" size={60} color="#2BF5D1" />
+          <Icon name="fingerprint" size={60} color="heroAccent" />
         </Pressable>
 
         <View style={{ minHeight: 44, alignItems: "center" }}>

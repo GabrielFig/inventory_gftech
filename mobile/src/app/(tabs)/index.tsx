@@ -236,7 +236,7 @@ function HeroFigure({ label, value, highlight }: { label: string; value: string;
       <AppText variant="caption" tone="heroMuted">
         {label}
       </AppText>
-      <AppText variant="number" style={{ color: highlight ? "#2BF5D1" : theme.heroText }}>
+      <AppText variant="number" style={{ color: highlight ? theme.heroAccent : theme.heroText }}>
         {value}
       </AppText>
     </View>

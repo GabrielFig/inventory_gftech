@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useReducedMotion } from "react-native-reanimated";
 
 import { AppText, type AppTextProps } from "@/components/ui/text";
 import { formatMoney } from "@/lib/format";
@@ -12,10 +13,13 @@ export function AnimatedMoney({
   duration = 650,
   ...textProps
 }: { value: number; duration?: number } & Omit<AppTextProps, "children">) {
+  const reduced = useReducedMotion();
   const [shown, setShown] = useState(0);
   const shownRef = useRef(0);
 
   useEffect(() => {
+    // Con "reducir movimiento" activado en el teléfono no hay cuenta: se muestra la cifra directo.
+    if (reduced) return;
     const from = shownRef.current;
     const startedAt = Date.now();
     let frame = 0;
@@ -28,8 +32,9 @@ export function AnimatedMoney({
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [value, duration]);
+  }, [value, duration, reduced]);
 
   // Con centavos solo al llegar al valor final: evita que "parpadeen" durante la cuenta.
-  return <AppText {...textProps}>{formatMoney(shown === value ? value : Math.round(shown))}</AppText>;
+  const display = reduced ? value : shown;
+  return <AppText {...textProps}>{formatMoney(display === value ? value : Math.round(display))}</AppText>;
 }
