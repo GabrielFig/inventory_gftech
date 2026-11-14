@@ -62,6 +62,12 @@ export default function SalesScreen() {
     );
   }, [data, term]);
   const sections = useMemo(() => groupByDay(visible), [visible]);
+  // Líneas por ticket (carrito) entre las ventas cargadas.
+  const ticketSizes = useMemo(() => {
+    const sizes = new Map<string, number>();
+    for (const s of data?.items ?? []) if (s.ticket_id) sizes.set(s.ticket_id, (sizes.get(s.ticket_id) ?? 0) + 1);
+    return sizes;
+  }, [data]);
   const total = data?.items.reduce((sum, s) => sum + Number(s.total), 0) ?? 0;
   const profit = data?.items.reduce((sum, s) => sum + Number(s.profit), 0) ?? 0;
 
@@ -139,7 +145,7 @@ export default function SalesScreen() {
         )}
         renderItem={({ item, index }) => (
           <Reveal index={index}>
-            <SaleRow sale={item} showProfit={isAdmin} onPress={() => router.push({ pathname: "/venta/[id]", params: { id: item.id } })} />
+            <SaleRow sale={item} showProfit={isAdmin} ticketSize={item.ticket_id ? ticketSizes.get(item.ticket_id) : undefined} onPress={() => router.push({ pathname: "/venta/[id]", params: { id: item.id } })} />
           </Reveal>
         )}
         ItemSeparatorComponent={RowSeparator}

@@ -70,7 +70,18 @@ export function ProductRow({ product, onPress }: { product: Product; onPress: ()
   );
 }
 
-export function SaleRow({ sale, showProfit, onPress }: { sale: SaleRead; showProfit?: boolean; onPress?: () => void }) {
+export function SaleRow({
+  sale,
+  showProfit,
+  ticketSize,
+  onPress,
+}: {
+  sale: SaleRead;
+  showProfit?: boolean;
+  /** Líneas del ticket al que pertenece (solo se muestra si es más de una). */
+  ticketSize?: number;
+  onPress?: () => void;
+}) {
   return (
     <RowShell onPress={onPress} label={`Venta de ${sale.product.name}, ${formatMoney(sale.total)}`}>
       <View style={{ flex: 1, gap: 2 }}>
@@ -83,6 +94,11 @@ export function SaleRow({ sale, showProfit, onPress }: { sale: SaleRead; showPro
         <AppText variant="caption" tone="muted">
           {sale.quantity} × {formatMoney(sale.unit_price)} · {formatTime(parseDate(sale.sale_date))}
         </AppText>
+        {ticketSize && ticketSize > 1 ? (
+          <AppText variant="captionStrong" tone="primary">
+            Ticket de {ticketSize} productos
+          </AppText>
+        ) : null}
       </View>
       <View style={{ alignItems: "flex-end", gap: 2 }}>
         <AppText variant="number">{formatMoney(sale.total)}</AppText>

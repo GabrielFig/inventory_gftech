@@ -17,6 +17,8 @@ import type {
   Product,
   ProductInput,
   ProductListResponse,
+  SaleBatchCreate,
+  SaleBatchResult,
   SaleCreate,
   SaleListResponse,
   SaleRead,
@@ -162,6 +164,15 @@ export function useRegisterSale() {
   const invalidate = useInvalidate();
   return useMutation({
     mutationFn: (payload: SaleCreate) => apiFetch<SaleRead>("/sales", { method: "POST", body: payload }),
+    onSuccess: () => invalidate("sales", "products", "dashboard", "income", "compatibility"),
+  });
+}
+
+/** Registra un carrito (una o varias líneas en un ticket); todo o nada en el servidor. */
+export function useRegisterSaleBatch() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (payload: SaleBatchCreate) => apiFetch<SaleBatchResult>("/sales/batch", { method: "POST", body: payload }),
     onSuccess: () => invalidate("sales", "products", "dashboard", "income", "compatibility"),
   });
 }

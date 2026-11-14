@@ -64,6 +64,7 @@ export function QuantityStepper({
           selectTextOnFocus
           style={{
             flex: 1,
+            minWidth: 0,
             height: hit,
             textAlign: "center",
             fontSize: 20,

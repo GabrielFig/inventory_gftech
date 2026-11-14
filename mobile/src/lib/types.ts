@@ -64,6 +64,27 @@ export interface SaleCreate {
   quantity: number;
   unit_price?: number;
   notes?: string;
+  sale_date?: string;
+}
+
+export interface SaleBatchItem {
+  product_id: string;
+  quantity: number;
+  unit_price?: number;
+}
+
+export interface SaleBatchCreate {
+  items: SaleBatchItem[];
+  notes?: string;
+  /** ISO 8601; sin fecha se registra con la hora actual. */
+  sale_date?: string;
+}
+
+export interface SaleBatchResult {
+  ticket_id: string;
+  items: SaleRead[];
+  total: string;
+  profit: string;
 }
 
 export type SaleUpdate = Partial<Pick<SaleCreate, "quantity" | "unit_price" | "notes">>;
@@ -83,6 +104,7 @@ export interface SaleRead {
   unit_cost: string;
   notes: string | null;
   sale_date: string;
+  ticket_id: string | null;
   product: SaleProductSummary;
   total: string;
   profit: string;

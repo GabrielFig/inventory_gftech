@@ -108,7 +108,9 @@ export function StatTile({
 export function DetailRow({ label, value, tone }: { label: string; value: string; tone?: "success" | "danger" | "muted" }) {
   return (
     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: spacing.md, minHeight: 36 }}>
-      <AppText tone="muted">{label}</AppText>
+      <AppText tone="muted" style={{ flexShrink: 1 }}>
+        {label}
+      </AppText>
       <AppText variant="bodyStrong" tone={tone ?? "default"} style={{ flexShrink: 1, textAlign: "right" }}>
         {value}
       </AppText>
