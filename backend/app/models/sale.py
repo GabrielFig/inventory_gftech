@@ -14,6 +14,8 @@ class Sale(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     product_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("products.id"), index=True)
     sold_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"), default=None)
+    # Las ventas de un mismo carrito (varios productos en una sola venta) comparten ticket_id.
+    ticket_id: Mapped[uuid.UUID | None] = mapped_column(index=True, default=None)
 
     quantity: Mapped[int]
     # Snapshots at time of sale so historical reports stay accurate even if

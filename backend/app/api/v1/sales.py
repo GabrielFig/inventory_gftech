@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user, require_admin
 from app.core.database import get_db
 from app.models.user import User
-from app.schemas.sale import SaleCreate, SaleListResponse, SaleRead, SaleUpdate
+from app.schemas.sale import SaleBatchCreate, SaleBatchRead, SaleCreate, SaleListResponse, SaleRead, SaleUpdate
 from app.services import sale_service
 
 router = APIRouter(prefix="/sales", tags=["sales"])
@@ -34,6 +34,14 @@ async def register_sale(
     payload: SaleCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)
 ) -> SaleRead:
     return await sale_service.register_sale(db, payload, sold_by_id=user.id)
+
+
+@router.post("/batch", response_model=SaleBatchRead, status_code=status.HTTP_201_CREATED)
+async def register_sales_batch(
+    payload: SaleBatchCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)
+) -> SaleBatchRead:
+    ticket_id, sales = await sale_service.register_sales_batch(db, payload, sold_by_id=user.id)
+    return SaleBatchRead(ticket_id=ticket_id, items=sales)
 
 
 @router.patch("/{sale_id}", response_model=SaleRead)

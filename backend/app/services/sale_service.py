@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
@@ -9,13 +9,28 @@ from sqlalchemy.orm import selectinload
 from app.models.product import Product
 from app.models.sale import Sale
 from app.models.stock_movement import MovementType, StockMovement
-from app.schemas.sale import SaleCreate, SaleUpdate
+from app.schemas.sale import SaleBatchCreate, SaleCreate, SaleUpdate
 from app.services.product_service import get_product
 
 SALE_LOADS = (selectinload(Sale.product),)
 
 
+def resolve_sale_date(value: datetime | None) -> datetime:
+    """Fecha de la venta: ahora si no se indica; las fechas futuras se rechazan."""
+    now = datetime.now(timezone.utc)
+    if value is None:
+        return now
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    if value > now + timedelta(minutes=5):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="La fecha de la venta no puede ser futura"
+        )
+    return value.astimezone(timezone.utc)
+
+
 async def register_sale(db: AsyncSession, payload: SaleCreate, sold_by_id: uuid.UUID | None) -> Sale:
+    sale_date = resolve_sale_date(payload.sale_date)
     product = await get_product(db, payload.product_id)
     if product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
@@ -35,6 +50,7 @@ async def register_sale(db: AsyncSession, payload: SaleCreate, sold_by_id: uuid.
         unit_price=unit_price,
         unit_cost=product.cost,
         notes=payload.notes,
+        sale_date=sale_date,
     )
     db.add(sale)
 
@@ -48,6 +64,7 @@ async def register_sale(db: AsyncSession, payload: SaleCreate, sold_by_id: uuid.
             quantity_delta=-payload.quantity,
             resulting_stock=product.current_stock,
             note=f"Venta de {payload.quantity} pieza(s)",
+            created_at=sale_date,
         )
     )
 
@@ -55,6 +72,70 @@ async def register_sale(db: AsyncSession, payload: SaleCreate, sold_by_id: uuid.
     await db.commit()
 
     return await get_sale(db, sale.id)
+
+
+async def register_sales_batch(
+    db: AsyncSession, payload: SaleBatchCreate, sold_by_id: uuid.UUID | None
+) -> tuple[uuid.UUID, list[Sale]]:
+    """Registra un carrito: una venta por producto, todas con el mismo ticket y fecha.
+
+    Todo o nada: se valida producto y stock de todo el carrito antes de escribir nada.
+    """
+    sale_date = resolve_sale_date(payload.sale_date)
+
+    products: dict[uuid.UUID, Product] = {}
+    requested: dict[uuid.UUID, int] = {}
+    for item in payload.items:
+        if item.product_id not in products:
+            product = await get_product(db, item.product_id)
+            if product is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
+            products[item.product_id] = product
+        requested[item.product_id] = requested.get(item.product_id, 0) + item.quantity
+
+    for product_id, quantity in requested.items():
+        product = products[product_id]
+        if quantity > product.current_stock:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Stock insuficiente de «{product.name}». Disponible: {product.current_stock} pieza(s)",
+            )
+
+    ticket_id = uuid.uuid4()
+    for item in payload.items:
+        product = products[item.product_id]
+        unit_price = item.unit_price if item.unit_price is not None else product.sale_price
+        db.add(
+            Sale(
+                product_id=product.id,
+                sold_by_id=sold_by_id,
+                ticket_id=ticket_id,
+                quantity=item.quantity,
+                unit_price=unit_price,
+                unit_cost=product.cost,
+                notes=payload.notes,
+                sale_date=sale_date,
+            )
+        )
+        product.sold_count += item.quantity
+        db.add(
+            StockMovement(
+                product_id=product.id,
+                created_by_id=sold_by_id,
+                type=MovementType.SALE,
+                quantity_delta=-item.quantity,
+                resulting_stock=product.current_stock,
+                note=f"Venta de {item.quantity} pieza(s)",
+                created_at=sale_date,
+            )
+        )
+
+    await db.flush()
+    await db.commit()
+
+    query = select(Sale).options(*SALE_LOADS).where(Sale.ticket_id == ticket_id).order_by(Sale.id)
+    sales = (await db.execute(query)).scalars().all()
+    return ticket_id, list(sales)
 
 
 async def get_sale(db: AsyncSession, sale_id: uuid.UUID) -> Sale | None:
