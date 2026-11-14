@@ -72,7 +72,28 @@ export interface Sale {
   unit_cost: string;
   notes: string | null;
   sale_date: string;
+  ticket_id: string | null;
   product: SaleProductSummary;
+  total: string;
+  profit: string;
+}
+
+export interface SaleBatchItemInput {
+  product_id: string;
+  quantity: number;
+  unit_price?: number;
+}
+
+export interface SaleBatchInput {
+  items: SaleBatchItemInput[];
+  notes?: string;
+  /** ISO 8601; sin fecha se registra con la hora actual. */
+  sale_date?: string;
+}
+
+export interface SaleBatchResult {
+  ticket_id: string;
+  items: Sale[];
   total: string;
   profit: string;
 }
@@ -85,6 +106,7 @@ export interface SaleListResponse {
 export interface SaleCreateInput {
   product_id: string;
   quantity: number;
+  sale_date?: string;
   unit_price?: number;
   notes?: string;
 }

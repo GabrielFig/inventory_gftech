@@ -108,6 +108,16 @@ export default function SalesPage() {
     );
   }, [data, term]);
   const groups = useMemo(() => groupByDay(visible), [visible]);
+  // Cuántas líneas tiene cada ticket (carrito) entre las ventas cargadas.
+  const ticketSizes = useMemo(() => {
+    const sizes = new Map<string, number>();
+    for (const s of data?.items ?? []) if (s.ticket_id) sizes.set(s.ticket_id, (sizes.get(s.ticket_id) ?? 0) + 1);
+    return sizes;
+  }, [data]);
+  const ticketLabel = (sale: Sale) => {
+    const size = sale.ticket_id ? (ticketSizes.get(sale.ticket_id) ?? 1) : 1;
+    return size > 1 ? `Ticket de ${size} productos` : null;
+  };
   const canLoadMore = !!data && data.items.length < data.total && limit < MAX_LIMIT;
   const summary = income.data?.summary;
 
@@ -218,6 +228,11 @@ export default function SalesPage() {
                         <div className="min-w-0">
                           <p className="font-medium leading-snug">{sale.product.name}</p>
                           <p className="mt-0.5 text-sm text-muted-foreground">{sale.product.model_compatibility}</p>
+                          {ticketLabel(sale) && (
+                            <p className="mt-1 inline-block rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">
+                              {ticketLabel(sale)}
+                            </p>
+                          )}
                         </div>
                         {isAdmin && (
                           <SaleActions
@@ -288,7 +303,14 @@ export default function SalesPage() {
                         <TableCell className="text-sm tabular-nums text-muted-foreground">
                           {formatTime(sale.sale_date)}
                         </TableCell>
-                        <TableCell className="font-medium">{sale.product.name}</TableCell>
+                        <TableCell>
+                          <div className="font-medium">{sale.product.name}</div>
+                          {ticketLabel(sale) && (
+                            <div className="mt-0.5 inline-block rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">
+                              {ticketLabel(sale)}
+                            </div>
+                          )}
+                        </TableCell>
                         <TableCell
                           className="max-w-36 truncate text-sm text-muted-foreground"
                           title={sale.product.model_compatibility}
