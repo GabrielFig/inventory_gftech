@@ -126,6 +126,7 @@ export function ProductFormDialog({
             <div className="space-y-2">
               <Label>Proveedor</Label>
               <Select
+                items={Object.fromEntries((suppliers ?? []).map((s) => [s.id, s.name]))}
                 value={watch("supplier_id")}
                 onValueChange={(v) => setValue("supplier_id", v ?? "", { shouldValidate: true })}
               >
@@ -146,6 +147,7 @@ export function ProductFormDialog({
             <div className="space-y-2">
               <Label>Categoría</Label>
               <Select
+                items={Object.fromEntries((categories ?? []).map((c) => [c.id, c.name]))}
                 value={watch("category_id")}
                 onValueChange={(v) => setValue("category_id", v ?? "", { shouldValidate: true })}
               >

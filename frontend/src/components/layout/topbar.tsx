@@ -4,7 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, Plus, LogOut, User as UserIcon } from "lucide-react";
+import { useTheme } from "next-themes";
+import { Menu, Moon, Plus, LogOut, Sun, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import {
@@ -40,6 +41,7 @@ function pageTitle(pathname: string): string {
 export function Topbar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { resolvedTheme, setTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [quickSaleOpen, setQuickSaleOpen] = useState(false);
 
@@ -78,6 +80,7 @@ export function Topbar() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={active ? "page" : undefined}
                   onClick={() => setMobileOpen(false)}
                   className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium",
@@ -98,7 +101,7 @@ export function Topbar() {
       <h1 className="font-display text-lg font-semibold">{pageTitle(pathname)}</h1>
 
       <div className="ml-auto flex items-center gap-2">
-        <Button onClick={() => setQuickSaleOpen(true)} className="cursor-pointer gap-1.5">
+        <Button onClick={() => setQuickSaleOpen(true)} className="h-10 cursor-pointer gap-1.5 px-3" aria-label="Registrar venta">
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">Registrar venta</span>
         </Button>
@@ -121,6 +124,13 @@ export function Topbar() {
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+              className="cursor-pointer"
+            >
+              {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              {resolvedTheme === "dark" ? "Modo claro" : "Modo oscuro"}
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={logout} className="cursor-pointer text-danger focus:text-danger">
               <LogOut className="h-4 w-4" />
               Cerrar sesión

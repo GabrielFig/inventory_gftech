@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api-client";
 import type { Sale, SaleCreateInput, SaleListResponse, SaleUpdateInput } from "@/lib/types";
 
@@ -16,6 +16,7 @@ export function useSales(filters: SaleFilters = {}) {
   return useQuery({
     queryKey: ["sales", filters],
     queryFn: () => apiFetch<SaleListResponse>("/sales", { params: { ...filters } }),
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -27,6 +28,7 @@ export function useRegisterSale() {
       queryClient.invalidateQueries({ queryKey: ["sales"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["income"] });
     },
   });
 }
@@ -39,6 +41,7 @@ export function useUpdateSale(id: string) {
       queryClient.invalidateQueries({ queryKey: ["sales"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["income"] });
     },
   });
 }
@@ -51,6 +54,7 @@ export function useDeleteSale() {
       queryClient.invalidateQueries({ queryKey: ["sales"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["income"] });
     },
   });
 }

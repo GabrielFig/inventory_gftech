@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api-client";
 import type { Product, ProductCreateInput, ProductListResponse, ProductUpdateInput } from "@/lib/types";
 
@@ -20,6 +20,7 @@ export function useProducts(filters: ProductFilters = {}) {
       apiFetch<ProductListResponse>("/products", {
         params: { ...filters },
       }),
+    placeholderData: keepPreviousData,
   });
 }
 

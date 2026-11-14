@@ -2,6 +2,7 @@
 
 import { Package, Wallet, TrendingUp, AlertTriangle } from "lucide-react";
 import { StatCard } from "@/components/dashboard/stat-card";
+import { IncomeCard } from "@/components/dashboard/income-card";
 import { SalesTrendChart } from "@/components/dashboard/sales-trend-chart";
 import { CategoryChart } from "@/components/dashboard/category-chart";
 import { LowStockList } from "@/components/dashboard/low-stock-list";
@@ -16,6 +17,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <IncomeCard />
       <ModelFitSearch variant="hero" />
 
       {isLoading || !data ? (

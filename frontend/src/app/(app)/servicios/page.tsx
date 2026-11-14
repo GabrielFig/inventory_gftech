@@ -144,7 +144,7 @@ export default function ServicesPage() {
                     {isAdmin && (
                       <DropdownMenu>
                         <DropdownMenuTrigger
-                          render={<Button variant="ghost" size="icon-sm" className="-mr-1 cursor-pointer" aria-label="Acciones" />}
+                          render={<Button variant="ghost" size="icon" className="-mr-1 size-10 cursor-pointer md:size-8" aria-label="Acciones del servicio" />}
                         >
                           <MoreHorizontal className="h-4 w-4" />
                         </DropdownMenuTrigger>
