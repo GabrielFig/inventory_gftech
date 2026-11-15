@@ -5,11 +5,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
+from app.models.phone_model import ProductCompatibility
 from app.models.product import Product
 from app.models.stock_movement import MovementType, StockMovement
 from app.schemas.product import ProductCreate, ProductUpdate
+from app.services import compatibility_service
 
-PRODUCT_LOADS = (selectinload(Product.supplier), selectinload(Product.category))
+PRODUCT_LOADS = (
+    selectinload(Product.supplier),
+    selectinload(Product.category),
+    selectinload(Product.compatibilities).selectinload(ProductCompatibility.phone_model),
+)
 
 
 async def generate_next_code(db: AsyncSession) -> str:
@@ -80,10 +86,14 @@ async def get_product(db: AsyncSession, product_id: uuid.UUID) -> Product | None
 
 
 async def create_product(db: AsyncSession, payload: ProductCreate, created_by_id: uuid.UUID | None) -> Product:
+    # Se resuelven primero: si un modelo no existe (422) no queda nada a medias en la sesión.
+    links = await compatibility_service.resolve_compatible_models(db, payload.compatible_models)
     code = await generate_next_code(db)
-    product = Product(code=code, **payload.model_dump())
+    product = Product(code=code, **payload.model_dump(exclude={"compatible_models"}))
     db.add(product)
     await db.flush()
+    for phone_model, note in links:
+        db.add(ProductCompatibility(product_id=product.id, phone_model_id=phone_model.id, note=note))
 
     db.add(
         StockMovement(
@@ -100,8 +110,15 @@ async def create_product(db: AsyncSession, payload: ProductCreate, created_by_id
 
 
 async def update_product(db: AsyncSession, product: Product, payload: ProductUpdate) -> Product:
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    changes = payload.model_dump(exclude_unset=True, exclude={"compatible_models"})
+    links = None
+    if payload.compatible_models is not None:
+        links = await compatibility_service.resolve_compatible_models(db, payload.compatible_models)
+
+    for field, value in changes.items():
         setattr(product, field, value)
+    if links is not None:
+        await compatibility_service.replace_product_models(db, product, links)
     await db.commit()
     return await get_product(db, product.id)
 

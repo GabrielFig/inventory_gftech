@@ -8,6 +8,7 @@ from app.core.database import get_db
 from app.models.user import User
 from app.schemas.product import ProductCreate, ProductListResponse, ProductRead, ProductUpdate, RestockRequest
 from app.services import product_service
+from app.services.compatibility_service import InvalidCompatibleModel
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -44,7 +45,10 @@ async def get_product(
 async def create_product(
     payload: ProductCreate, db: AsyncSession = Depends(get_db), user: User = Depends(require_admin)
 ) -> ProductRead:
-    return await product_service.create_product(db, payload, created_by_id=user.id)
+    try:
+        return await product_service.create_product(db, payload, created_by_id=user.id)
+    except InvalidCompatibleModel as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.patch("/{product_id}", response_model=ProductRead)
@@ -57,7 +61,10 @@ async def update_product(
     product = await product_service.get_product(db, product_id)
     if product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
-    return await product_service.update_product(db, product, payload)
+    try:
+        return await product_service.update_product(db, product, payload)
+    except InvalidCompatibleModel as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.post("/{product_id}/restock", response_model=ProductRead)

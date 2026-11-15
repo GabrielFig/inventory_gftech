@@ -40,6 +40,15 @@ class Product(Base):
     )
 
     @property
+    def compatible_models(self) -> list[dict]:
+        """Modelos de teléfono enlazados (requiere compatibilities.phone_model cargado)."""
+        items = [
+            {"id": c.phone_model.id, "brand": c.phone_model.brand, "model": c.phone_model.model, "note": c.note}
+            for c in self.compatibilities
+        ]
+        return sorted(items, key=lambda m: (m["brand"].lower(), m["model"].lower()))
+
+    @property
     def current_stock(self) -> int:
         return self.initial_stock - self.sold_count
 
