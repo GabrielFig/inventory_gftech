@@ -14,6 +14,7 @@ import type {
   DashboardResponse,
   IncomeResponse,
   ModelSearchResult,
+  PhoneModel,
   Product,
   ProductInput,
   ProductListResponse,
@@ -150,6 +151,26 @@ export function useModelSearch(query: string) {
   });
 }
 
+/** Modelos del catálogo filtrados por marca y/o modelo (sin texto: los primeros alfabéticamente). */
+export function usePhoneModels(query: string) {
+  const q = query.trim();
+  return useQuery({
+    queryKey: ["phone-models", q],
+    queryFn: () => apiFetch<PhoneModel[]>("/phone-models", { params: { q, limit: 30 } }),
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  });
+}
+
+export function usePhoneBrands(enabled = true) {
+  return useQuery({
+    queryKey: ["phone-brands"],
+    queryFn: () => apiFetch<string[]>("/phone-models/brands"),
+    enabled,
+    staleTime: 300_000,
+  });
+}
+
 // ───────────────────────── Mutaciones ─────────────────────────
 
 /** Todo lo que cambia stock o dinero invalida junto: inventario, ventas, ingresos y resumen. */
@@ -197,7 +218,7 @@ export function useCreateProduct() {
   const invalidate = useInvalidate();
   return useMutation({
     mutationFn: (payload: ProductInput) => apiFetch<Product>("/products", { method: "POST", body: payload }),
-    onSuccess: () => invalidate("products", "dashboard"),
+    onSuccess: () => invalidate("products", "dashboard", "compatibility", "phone-models", "phone-brands"),
   });
 }
 
@@ -206,7 +227,7 @@ export function useUpdateProduct(id: string) {
   return useMutation({
     mutationFn: (payload: Partial<Omit<ProductInput, "initial_stock">>) =>
       apiFetch<Product>(`/products/${id}`, { method: "PATCH", body: payload }),
-    onSuccess: () => invalidate("products", "dashboard", "compatibility"),
+    onSuccess: () => invalidate("products", "dashboard", "compatibility", "phone-models", "phone-brands"),
   });
 }
 

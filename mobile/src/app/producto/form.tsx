@@ -3,6 +3,7 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 
+import { ModelPicker } from "@/components/model-picker";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chips";
 import { TextField } from "@/components/ui/field";
@@ -11,6 +12,7 @@ import { FormScreen } from "@/components/ui/screen";
 import { ErrorState, ListSkeleton } from "@/components/ui/states";
 import { AppText } from "@/components/ui/text";
 import { useCategories, useCreateProduct, useProduct, useSuppliers, useUpdateProduct } from "@/hooks/api";
+import { fromPhoneModels, suggestCompatibilityText, toInputs, type ModelDraft } from "@/lib/compatible-models";
 import { formatMoney, parseAmount } from "@/lib/format";
 import { ApiClientError } from "@/lib/http";
 import { useSession } from "@/lib/session";
@@ -59,6 +61,7 @@ function ProductForm({ product }: { product?: Product }) {
   const [categoryId, setCategoryId] = useState(product?.category_id ?? "");
   const [name, setName] = useState(product?.name ?? "");
   const [model, setModel] = useState(product?.model_compatibility ?? "");
+  const [models, setModels] = useState<ModelDraft[]>(product ? fromPhoneModels(product.compatible_models) : []);
   const [cost, setCost] = useState(product ? String(Number(product.cost)) : "");
   const [price, setPrice] = useState(product ? String(Number(product.sale_price)) : "");
   const [stock, setStock] = useState("1");
@@ -68,6 +71,7 @@ function ProductForm({ product }: { product?: Product }) {
   const costValue = parseAmount(cost);
   const priceValue = parseAmount(price);
   const margin = costValue > 0 && priceValue > 0 ? ((priceValue - costValue) / costValue) * 100 : null;
+  const suggestion = models.length > 0 ? suggestCompatibilityText(models) : "";
   const pending = create.isPending || update.isPending;
 
   function validate(): boolean {
@@ -94,6 +98,7 @@ function ProductForm({ product }: { product?: Product }) {
       model_compatibility: model.trim(),
       cost: costValue,
       sale_price: priceValue,
+      compatible_models: toInputs(models),
     };
     try {
       if (editing) await update.mutateAsync(body);
@@ -142,7 +147,12 @@ function ProductForm({ product }: { product?: Product }) {
       </View>
 
       <TextField label="Nombre del producto" value={name} onChangeText={setName} placeholder="Ghostic Acrigel" error={errors.name} maxLength={150} />
-      <TextField label="Modelo / compatibilidad" value={model} onChangeText={setModel} placeholder="iPhone 15 / 15 Pro" error={errors.model} maxLength={255} />
+      <ModelPicker value={models} onChange={setModels} />
+
+      <TextField label="Modelo / compatibilidad (texto)" value={model} onChangeText={setModel} placeholder="iPhone 15 / 15 Pro" error={errors.model} maxLength={255} />
+      {suggestion && suggestion !== model.trim() ? (
+        <Button title="Sugerir texto desde los modelos" icon="auto-fix-high" variant="ghost" onPress={() => setModel(suggestion)} />
+      ) : null}
 
       <View style={{ flexDirection: "row", gap: spacing.md }}>
         <View style={{ flex: 1 }}>

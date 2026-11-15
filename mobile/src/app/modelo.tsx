@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
 
@@ -19,7 +19,8 @@ export default function ModelSearchScreen() {
   const bottomInset = useBottomInset();
   const router = useRouter();
   const theme = useTheme();
-  const [query, setQuery] = useState("");
+  const { q } = useLocalSearchParams<{ q?: string }>();
+  const [query, setQuery] = useState(q ?? "");
   const debounced = useDebouncedValue(query.trim(), 300);
   const { data, isFetching, isError, error, refetch } = useModelSearch(debounced);
 
