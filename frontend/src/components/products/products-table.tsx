@@ -3,6 +3,7 @@
 import { MoreHorizontal, PackagePlus, Pencil, Trash2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +22,38 @@ interface Actions {
   onEdit: (product: Product) => void;
   onRestock: (product: Product) => void;
   onDelete: (product: Product) => void;
+}
+
+const MAX_CHIPS = 3;
+
+function LinkedModels({ product }: { product: Product }) {
+  const models = product.compatible_models;
+  if (models.length === 0) {
+    return <p className="mt-1 text-xs italic text-muted-foreground/80">Sin modelos enlazados</p>;
+  }
+  const extra = models.length - MAX_CHIPS;
+  return (
+    <ul className="mt-1 flex flex-wrap gap-1" aria-label="Modelos enlazados">
+      {models.slice(0, MAX_CHIPS).map((m) => (
+        <li key={m.id}>
+          <Badge variant="outline" className="h-5 font-normal">
+            {m.model}
+          </Badge>
+        </li>
+      ))}
+      {extra > 0 && (
+        <li>
+          <Badge
+            variant="outline"
+            className="h-5 font-normal"
+            title={models.slice(MAX_CHIPS).map((m) => m.model).join(", ")}
+          >
+            +{extra}
+          </Badge>
+        </li>
+      )}
+    </ul>
+  );
 }
 
 function RowActions({ product, actions, className }: { product: Product; actions: Actions; className?: string }) {
@@ -99,6 +132,7 @@ export function ProductsTable({
               <div className="min-w-0">
                 <p className="font-medium leading-snug">{product.name}</p>
                 <p className="mt-0.5 text-sm text-muted-foreground">{product.model_compatibility}</p>
+                <LinkedModels product={product} />
               </div>
               <RowActions product={product} actions={actions} className="-mr-1 -mt-1 size-11" />
             </div>
@@ -147,8 +181,11 @@ export function ProductsTable({
                   <div className="font-medium">{product.name}</div>
                   <div className="text-xs text-muted-foreground">{product.supplier.name}</div>
                 </TableCell>
-                <TableCell className="max-w-56 truncate text-sm text-muted-foreground" title={product.model_compatibility}>
-                  {product.model_compatibility}
+                <TableCell className="max-w-64 text-sm text-muted-foreground">
+                  <div className="truncate" title={product.model_compatibility}>
+                    {product.model_compatibility}
+                  </div>
+                  <LinkedModels product={product} />
                 </TableCell>
                 <TableCell className="text-sm">{product.category.name}</TableCell>
                 <TableCell className="text-right tabular-nums text-sm">{formatCurrency(product.cost)}</TableCell>

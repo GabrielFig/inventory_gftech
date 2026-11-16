@@ -17,6 +17,21 @@ export interface Category {
   name: string;
 }
 
+/** Modelo de teléfono (catálogo `phone_models`). */
+export interface PhoneModel {
+  id: string;
+  brand: string;
+  model: string;
+}
+
+/** Modelo enlazado a un producto; `note` es opcional (p. ej. "Funda"). */
+export interface CompatibleModel extends PhoneModel {
+  note: string | null;
+}
+
+/** Lo que se manda al guardar: un modelo existente (`id`) o uno nuevo (marca + modelo). */
+export type CompatibleModelInput = { id: string } | { brand: string; model: string };
+
 export type StockStatus = "ok" | "bajo" | "agotado";
 
 export interface Product {
@@ -34,6 +49,7 @@ export interface Product {
   updated_at: string;
   supplier: Supplier;
   category: Category;
+  compatible_models: CompatibleModel[];
   current_stock: number;
   inventory_value: string;
   margin_pct: number;
@@ -53,8 +69,10 @@ export interface ProductCreateInput {
   cost: number;
   sale_price: number;
   initial_stock: number;
+  compatible_models?: CompatibleModelInput[];
 }
 
+/** En PATCH, `compatible_models` omitido no toca los modelos; una lista (aun vacía) los reemplaza. */
 export type ProductUpdateInput = Partial<Omit<ProductCreateInput, "initial_stock">>;
 
 export interface SaleProductSummary {

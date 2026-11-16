@@ -5,6 +5,7 @@ import { Alert, View } from "react-native";
 
 import { DetailRow } from "@/components/tiles";
 import { Button } from "@/components/ui/button";
+import { Chip } from "@/components/ui/chips";
 import { Card } from "@/components/ui/card";
 import { TextField } from "@/components/ui/field";
 import { FormScreen } from "@/components/ui/screen";
@@ -123,6 +124,24 @@ function ProductDetail({ product }: { product: Product }) {
         <DetailRow label="Proveedor" value={product.supplier.name} />
         <DetailRow label="ID" value={product.code} />
       </Card>
+
+      <View style={{ gap: spacing.sm }}>
+        <AppText variant="captionStrong" tone="muted">
+          Modelos compatibles
+        </AppText>
+        {product.compatible_models.length > 0 ? (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
+            {product.compatible_models.map((m) => (
+              <Chip key={m.id} label={m.model} selected={false} onPress={() => router.push({ pathname: "/modelo", params: { q: m.model } })} />
+            ))}
+          </View>
+        ) : (
+          <AppText tone="muted">
+            Sin modelos enlazados: este producto no aparece en “Buscar por modelo”.
+            {isAdmin ? " Edítalo para elegirlos." : ""}
+          </AppText>
+        )}
+      </View>
 
       {restocking ? (
         <Card>

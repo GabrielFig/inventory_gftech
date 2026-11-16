@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Wand2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CompatibleModelsPicker } from "@/components/products/compatible-models-picker";
+import { fromPhoneModels, suggestCompatibilityText, toInputs, type ModelDraft } from "@/lib/compatible-models";
 import { useSuppliers, useCategories } from "@/hooks/use-lookups";
 import { useCreateProduct, useUpdateProduct } from "@/hooks/use-products";
 import { ApiClientError } from "@/lib/api-client";
@@ -43,6 +45,7 @@ export function ProductFormDialog({
   const { data: categories } = useCategories();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct(product?.id ?? "");
+  const [models, setModels] = useState<ModelDraft[]>([]);
 
   const {
     register,
@@ -66,6 +69,7 @@ export function ProductFormDialog({
 
   useEffect(() => {
     if (open) {
+      setModels(product ? fromPhoneModels(product.compatible_models) : []);
       reset(
         product
           ? {
@@ -90,6 +94,9 @@ export function ProductFormDialog({
     }
   }, [open, product, reset]);
 
+  const currentText = watch("model_compatibility");
+  const suggestion = models.length > 0 ? suggestCompatibilityText(models) : "";
+
   const isPending = createProduct.isPending || updateProduct.isPending;
 
   async function onSubmit(values: FormValues) {
@@ -97,10 +104,10 @@ export function ProductFormDialog({
       if (isEdit) {
         const { initial_stock, ...rest } = values;
         void initial_stock;
-        await updateProduct.mutateAsync(rest);
+        await updateProduct.mutateAsync({ ...rest, compatible_models: toInputs(models) });
         toast.success("Producto actualizado");
       } else {
-        await createProduct.mutateAsync(values);
+        await createProduct.mutateAsync({ ...values, compatible_models: toInputs(models) });
         toast.success("Producto agregado al catálogo");
       }
       onOpenChange(false);
@@ -111,7 +118,7 @@ export function ProductFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Editar producto" : "Agregar producto"}</DialogTitle>
           <DialogDescription>
@@ -173,7 +180,29 @@ export function ProductFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="model_compatibility">Modelo / compatibilidad</Label>
+            <Label>Modelos compatibles</Label>
+            <CompatibleModelsPicker value={models} onChange={setModels} />
+            <p className="text-xs text-muted-foreground">
+              Con estos modelos el producto aparece en “Buscar por modelo”.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="model_compatibility">Modelo / compatibilidad (texto)</Label>
+              {suggestion && suggestion !== currentText && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 cursor-pointer gap-1 px-2 text-xs"
+                  onClick={() => setValue("model_compatibility", suggestion, { shouldValidate: true, shouldDirty: true })}
+                >
+                  <Wand2 className="size-3.5" />
+                  Sugerir desde modelos
+                </Button>
+              )}
+            </div>
             <Input id="model_compatibility" {...register("model_compatibility")} placeholder="iPhone 15 / 15 Pro" />
             {errors.model_compatibility && <p className="text-xs text-danger">{errors.model_compatibility.message}</p>}
           </div>
